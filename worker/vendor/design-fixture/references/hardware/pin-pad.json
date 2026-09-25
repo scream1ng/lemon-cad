@@ -1,0 +1,14 @@
+{
+ "schema_version": "1.0",
+ "id": "pin-pad",
+ "category": "locating_pad",
+ "units": "mm",
+ "source": "shop standard for this skill; no purchased part",
+ "standard_pad": {
+  "along_x_mm": 40.0,
+  "across_y_mm": 40.0,
+  "cheek_offset_mm": 12.0,
+  "min_ligament_mm": 5.0,
+  "note": "Shop standard dowel pad: 40 x 40 centred on the pin, one plate thickness of ligament (5 mm) as on the clamp cap. Cheeks at +-12 mm leave room for a 12 mm cap tab beside the reamed hole. The dowel is pressed through the pad, so the pad thickness is the bearing length; a pad grown to suit is not standard."
+ }
+}

@@ -1,0 +1,25 @@
+[project]
+name = "lemoncad"
+version = "0.1.0"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "sqlalchemy>=2,<3",
+    "psycopg[binary]>=3.2,<4",
+    "python-multipart>=0.0.20",
+    "boto3>=1.36,<2",
+    "argon2-cffi>=23",
+    "cadquery-ocp>=7.8,<7.9",
+    "numpy>=1.26,<3",
+    "matplotlib>=3.8,<4",
+    "pillow>=10",
+    "shapely>=2,<3",
+    "google-auth[requests]>=2.40,<3",
+    "httpx>=0.28,<1",
+]
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.28"]
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = [".", "worker"]

@@ -1,0 +1,239 @@
+{
+  "schema_version": "1.0",
+  "id": "GH-201-B",
+  "manufacturer": "Good Hand Enterprise Co., Ltd.",
+  "category": "manual-horizontal-hold-down-toggle-clamp",
+  "availability": {
+    "preference": "preferred-workshop-item",
+    "selection_rule": "Use when reach, holding capacity, spindle adjustment, mounting stiffness, and opening clearance suit the fixture."
+  },
+  "units": "mm",
+  "source": {
+    "manufacturer_drawing_url": "https://www.goodhandclamps.com/proimages/pro/GH-2_series/PDF/GH-201-B.PDF",
+    "manufacturer_drawing_part_number": "GH-201-B",
+    "user_supplied_step_sha256": "688c0e0052d15b284833a0803b773a04c4bb295475c93981a5eacd363c0d6612",
+    "step_units": "mm",
+    "step_solid_count": 14,
+    "note": "Exact user-supplied 14-component STEP is bundled. Its saved pose is tilted and is not a verified closed operating pose."
+  },
+  "canonical_frame": {
+    "origin": "centre of the base front edge on the mounting plane",
+    "x_axis": "positive from base toward clamp pad",
+    "y_axis": "positive across base to the left when looking from handle toward pad",
+    "z_axis": "positive away from the mounting plane",
+    "handedness": "right-handed"
+  },
+  "base": {
+    "length_x_mm": 37.0,
+    "width_y_mm": 36.0,
+    "thickness_mm": 2.0,
+    "extent_in_canonical_frame": {
+      "x_min_mm": -37.0,
+      "x_max_mm": 0.0,
+      "y_min_mm": -18.0,
+      "y_max_mm": 18.0,
+      "z_min_mm": 0.0,
+      "z_max_mm": 2.0
+    },
+    "cad_width_y_mm": 35.040202025355
+  },
+  "mounting": {
+    "clamp_base_clearance_hole_diameter_mm": 5.5,
+    "longitudinal_pitch_mm": 26.2,
+    "transverse_pitch_mm": 22.0,
+    "front_row_offset_from_base_front_mm": 6.3,
+    "pattern_status": "Centres of the four obround slots measured from bundled STEP; source variant needs physical confirmation.",
+    "hole_centres_canonical_mm": [
+      [
+        -5.15,
+        -11.0201010126775,
+        0
+      ],
+      [
+        -5.15,
+        11.0201010126775,
+        0
+      ],
+      [
+        -31.85,
+        -11.0201010126775,
+        0
+      ],
+      [
+        -31.85,
+        11.0201010126775,
+        0
+      ]
+    ],
+    "fixture_plate_preparation": {
+      "thread": "M5 x 0.8",
+      "nominal_laser_cut_tap_drill_diameter_mm": 4.2,
+      "operation": "laser cut pilot hole, then tap M5 x 0.8",
+      "note": "Confirm kerf, heat-affected edge, tap condition, and physical clamp fit before production."
+    },
+    "drawing_hole_centres_canonical_mm": [
+      [
+        -6.3,
+        -11.0,
+        0.0
+      ],
+      [
+        -6.3,
+        11.0,
+        0.0
+      ],
+      [
+        -32.5,
+        -11.0,
+        0.0
+      ],
+      [
+        -32.5,
+        11.0,
+        0.0
+      ]
+    ],
+    "cad_slot_width_mm": 5.1,
+    "cad_slot_length_mm": 6.3,
+    "cad_longitudinal_pitch_mm": 26.7,
+    "cad_transverse_pitch_mm": 22.040202025355,
+    "drawing_dimensions_note": "Existing longitudinal_pitch_mm=26.2, transverse_pitch_mm=22 and front_row_offset_from_base_front_mm=6.3 describe the drawing, not the bundled CAD pattern. Use hole_centres_canonical_mm for this asset."
+  },
+  "standard_mount_plate": {
+    "along_x_mm": 50.0,
+    "across_y_mm": 60.0,
+    "centre_canonical_mm": [
+      -18.5,
+      0.0
+    ],
+    "min_ligament_mm": 5.0,
+    "note": "Shop standard clamp cap for this clamp: 50 mm along the arm x 60 mm across, centred on the hole pattern. 5 mm ligament (1 x plate thickness) applies to this cap only; 60 mm across leaves room for cheek tab slots beside the base."
+  },
+  "closed_geometry": {
+    "underarm_height_mm": 25.1,
+    "reach_base_front_to_spindle_axis_mm": 56.9,
+    "arm_pivot_canonical_mm": [
+      0.0,
+      0.0,
+      25.1
+    ],
+    "arm_pivot_status": "derived from manufacturer side-view dimensions; use for placement and planning, not as complete linkage kinematics",
+    "spindle_axis_point_at_arm_canonical_mm": [
+      56.9,
+      0.0,
+      25.1
+    ],
+    "spindle_axis_direction_canonical": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "force_direction_canonical": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "contact_point_note": "The pad contact point moves along the spindle axis; its exact Z coordinate depends on spindle adjustment and workpiece/support geometry.",
+    "spindle_adjustment_range_mm": null,
+    "spindle_adjustment_status": "unknown"
+  },
+  "envelope": {
+    "overall_length_mm": 143.5,
+    "overall_height_mm": 37.8,
+    "user_step_saved_pose_bounding_box_mm": [
+      141.673,
+      70.63,
+      35.04
+    ],
+    "note": "The STEP bounding box is orientation-dependent and should not replace the canonical mounting dimensions."
+  },
+  "motion": {
+    "bar_open_angle_deg": 85.0,
+    "handle_open_angle_deg": 73.0,
+    "complete_linkage_kinematics_available": false,
+    "verification_rule": "Use a conservative opening envelope unless intermediate linkage poses are derived and collision-checked."
+  },
+  "capacity": {
+    "holding_capacity_kgf": 90.0,
+    "holding_capacity_N_approx": 882.6,
+    "applied_clamping_force_N": null,
+    "warning": "Holding capacity is not applied clamping force."
+  },
+  "supplied_hardware": {
+    "spindle": "FC-064410",
+    "flanged_washers": "FW-140"
+  },
+  "verification": {
+    "mounting_pattern_source": "Measured bundled STEP slot centres; drawing dimensions retained separately; physical variant unconfirmed.",
+    "closed_pose_geometry_source": "Nominal drawing dimensions only; the bundled STEP is tilted and has no verified closed-pose derivation.",
+    "physical_shop_measurement_completed": false,
+    "production_use_requires_fit_check": true
+  },
+  "asset": {
+    "file": "assets/hardware/GH-201-B.step",
+    "sha256": "688c0e0052d15b284833a0803b773a04c4bb295475c93981a5eacd363c0d6612",
+    "components": [
+      "NAUO1",
+      "NAUO2",
+      "NAUO3",
+      "NAUO4",
+      "NAUO5",
+      "NAUO6",
+      "NAUO7",
+      "NAUO8",
+      "NAUO9",
+      "NAUO10",
+      "NAUO11",
+      "NAUO12",
+      "NAUO13",
+      "NAUO14"
+    ],
+    "source_to_canonical": [
+      [
+        -1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        17.5201010126775
+      ],
+      [
+        0,
+        1,
+        0,
+        2
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "pose": "as-supplied",
+    "operating_pose_status": "unknown",
+    "spindle_tilt_from_mount_normal_deg": 24.52782746775118,
+    "pad_contact_canonical_mm": [
+      41.75241711918171,
+      0,
+      19.555287293271522
+    ],
+    "pad_outward_normal_canonical": [
+      0.41513514456933226,
+      0,
+      -0.9097597549591868
+    ],
+    "note": "Canonical transform is rigid, measured from base mounting plane raw Y=-2, front X=0, centre raw Z=-17.5201010126775. Preserve all occurrence placements. Do not rotate the entire clamp to make its spindle vertical."
+  },
+  "mount_height_policy": {
+    "default_offset_mm": 0.0,
+    "basis": "Workshop default requested by user: mounting face level with clamping surface. This is not a universal manufacturer requirement.",
+    "measurement": "Signed mounting-face minus actual clamping-surface height along surface_normal; measured after STEP export.",
+    "exception": "A different signed offset requires current hardware_pose and clamp_seating evidence for this clamp, including spindle adjustment and locked linkage.",
+    "operation_note": "Equal height does not establish spindle travel, contact or toggle lock."
+  }
+}

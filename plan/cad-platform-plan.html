@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAD utility platform — Product requirements</title>
+<style>
+:root{color-scheme:light;--ink:#18232d;--muted:#53616c;--line:#d9e0e5;--accent:#155e75;--paper:#fff;--wash:#f3f6f8}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.6 system-ui,sans-serif}main{max-width:1120px;margin:auto;padding:48px 36px 80px;background:var(--paper)}h1{font-size:36px;line-height:1.15;margin:12px 0}h2{font-size:23px;margin:42px 0 14px}h3{font-size:18px;margin:24px 0 10px}p{max-width:920px}a{color:var(--accent)}.meta{color:var(--muted);font-size:14px}.tag{display:inline-block;background:#e4f1f5;color:var(--accent);padding:3px 10px;font-size:13px;font-weight:650}.callout{border-left:4px solid var(--accent);background:var(--wash);padding:14px 18px;margin:20px 0}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:11px 12px}th{background:var(--wash);font-weight:650}td:first-child{font-weight:600}ul,ol{padding-left:22px}li{margin:6px 0}svg{width:100%;height:auto;min-width:680px}svg text{font:15px system-ui,sans-serif;fill:var(--ink)}svg .small{font-size:12px;fill:var(--muted)}svg .box{fill:var(--wash);stroke:var(--line)}svg .paid{fill:#e4f1f5;stroke:#82b2c1}svg .arrow{stroke:var(--accent);stroke-width:2;fill:none}footer{border-top:1px solid var(--line);margin-top:40px;padding-top:20px;font-size:13px;color:var(--muted)}@media(max-width:640px){main{padding:24px 18px}h1{font-size:29px}th,td{padding:9px 8px}}@media print{body,main{background:white}main{padding:0;max-width:none}h2,h3{break-after:avoid}tr,.callout,figure{break-inside:avoid}a{color:inherit}table{font-size:11px}}
+</style>
+</head>
+<body><main>
+<span class="tag">PRD · Draft for product decisions</span>
+<h1>From CAD file to useful dimensions.<br>From dimensions to paid engineering work.</h1>
+<p class="meta">25 September 2026 · Working product name: CAD utility platform · “Vibfixture” retained as the user's term; branding unresolved.</p>
+
+<h2>1. Summary</h2>
+<p>A free, approachable CAD viewer brings users in through a practical job: drop a part, extract the dimensions that matter, and download an annotated image or PDF. Paid fixture design, drawing generation, and costing continue from that same part and its selected features. The initial product must earn trust through reliable measurements before expanding into engineering automation.</p>
+<table><thead><tr><th>Status</th><th>Scope</th></tr></thead><tbody>
+<tr><td>Confirmed by user</td><td>Online3DViewer-like experience with simpler interaction; production use; critical dimensions; image/PDF output; free engagement feature; paid fixture, drawing, and costing tools.</td></tr>
+<tr><td>Proposed in this PRD</td><td>STEP-first, single-part launch; STL with explicit limitations; no account for free use; local free processing; fixture as first paid pilot; measurement set and release gates below.</td></tr>
+<tr><td>Unresolved</td><td>Paid launch order, pricing, supported part families, performance limits, accuracy threshold, and drawing/costing skill references.</td></tr>
+</tbody></table>
+
+<h2>2. Product journey</h2>
+<figure class="scroll"><svg viewBox="0 0 1000 310" role="img" aria-label="Free file import, dimensions, and export lead optionally to paid fixture, drawing, or costing workflows. Paid jobs require user consent to upload, inputs, preview, review, and delivery.">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="#155e75"/></marker></defs>
+<rect class="box" x="10" y="30" width="210" height="70" rx="6"/><text x="28" y="58">Drop STEP / STL</text><text class="small" x="28" y="80">Free · proposed local processing</text>
+<rect class="box" x="270" y="30" width="210" height="70" rx="6"/><text x="288" y="58">Inspect + measure</text><text class="small" x="288" y="80">Units · features · dimensions</text>
+<rect class="box" x="530" y="30" width="210" height="70" rx="6"/><text x="548" y="58">Download PNG / PDF</text><text class="small" x="548" y="80">Free task completed</text>
+<path class="arrow" d="M220 65 H270 M480 65 H530" marker-end="url(#arrow)"/>
+<path class="arrow" d="M635 100 V145 H220 V175 M635 145 V175 M635 145 H870 V175" marker-end="url(#arrow)"/>
+<rect class="paid" x="110" y="175" width="220" height="60" rx="6"/><text x="132" y="202">Design a fixture</text><text class="small" x="132" y="222">Proposed first paid pilot</text>
+<rect class="paid" x="525" y="175" width="220" height="60" rx="6"/><text x="547" y="202">Create a drawing</text><text class="small" x="547" y="222">Paid · scope to validate</text>
+<rect class="paid" x="770" y="175" width="220" height="60" rx="6"/><text x="792" y="202">Estimate cost</text><text class="small" x="792" y="222">Paid · scope to validate</text>
+<text x="110" y="280">Paid continuation: account + upload consent → inputs → preview → review → delivery</text>
+</svg></figure>
+<p class="meta">Entry points: file-drop homepage and format-specific landing pages. Paid actions appear alongside the loaded part and after export; never interrupt the free export.</p>
+
+<h2>3. Audience and outcome</h2>
+<table><thead><tr><th>Proposed initial user</th><th>Job to complete</th><th>Successful outcome</th></tr></thead><tbody>
+<tr><td>Workshop / supplier</td><td>Open a customer part without a CAD seat; check holes, spacing, and faces.</td><td>Readable dimensioned view for discussion or a work instruction.</td></tr>
+<tr><td>Estimator</td><td>Inspect size and selected features before estimating work.</td><td>Reliable geometric inputs; optional continuation into paid costing.</td></tr>
+<tr><td>Manufacturing engineer</td><td>Identify locating or checking features and communicate requirements.</td><td>Selected part and features carried into a paid fixture or drawing job.</td></tr>
+</tbody></table>
+<div class="callout"><strong>Product promise:</strong> “Open a part. Get the dimensions you need. Take them with you.” A critical dimension is selected by the user; geometric measurements alone do not establish tolerances or manufacturing intent.</div>
+
+<h2>4. Free launch scope</h2>
+<table><thead><tr><th>Capability</th><th>Required behavior</th><th>Boundary</th></tr></thead><tbody>
+<tr><td>Import</td><td>Drop or browse for STEP/STP and STL; show progress, cancel, and actionable errors.</td><td>Initial supported STEP workload: one part. Detect multi-part input and explain the limitation; never silently measure only a subset.</td></tr>
+<tr><td>Inspect</td><td>Rotate, pan, zoom, fit, standard orthographic views, and clear selection highlights.</td><td>Desktop-first; touch editing and large assemblies deferred.</td></tr>
+<tr><td>Units and overall size</td><td>Read STEP units; require STL unit confirmation; support mm/in display. Show three extents with the chosen axes visible.</td><td>Overall extents follow a defined part frame, not camera rotation; they are not minimum stock size.</td></tr>
+<tr><td>STEP measurements</td><td>Point-to-point distance; selected circular edge/cylindrical surface diameter; centre distance for supported parallel circular features; separation of parallel planar faces.</td><td>Use source CAD geometry. Unsupported geometry gets an explanation, not an invented value. A cylindrical face is not automatically classified as a hole.</td></tr>
+<tr><td>STL measurements</td><td>Overall size and point-to-point mesh distance after unit confirmation.</td><td>Clearly label mesh-derived measurements. No promise of recovered analytic holes, planes, or source CAD precision.</td></tr>
+<tr><td>Annotation</td><td>Add several dimensions; select, reposition labels, rename, remove, and undo removal. Distinguish distance, diameter, and face separation.</td><td>No geometry editing or inferred tolerances.</td></tr>
+<tr><td>PNG / PDF export</td><td>Preserve chosen view, visible dimensions, units, and filename. PDF also lists measurements and whether they are CAD- or mesh-derived. Preview output before downloading.</td><td>Proposed v1: one view per image or PDF page, one-page PDF. A dimensioned snapshot is not a full engineering drawing.</td></tr>
+<tr><td>Access and privacy</td><td>Proposed: no signup, payment, or watermark for core viewing, measurement, and export; free files stay on-device.</td><td>Local-processing claim depends on the accuracy feasibility gate. No model contents, filenames, or dimensions in analytics.</td></tr>
+</tbody></table>
+
+<h2>5. Free-to-paid boundary</h2>
+<table><thead><tr><th>Offer</th><th>Paid outcome</th><th>Required inputs / review</th><th>Launch status</th></tr></thead><tbody>
+<tr><td>Free viewer</td><td>None: viewing, supported measurements, PNG/PDF stay free.</td><td>User chooses dimensions; no account proposed.</td><td>First public release.</td></tr>
+<tr><td>Fixture / Vibfixture</td><td>Guided fixture concept, revisions, and explicitly requested delivery package.</td><td>Weld vs checking purpose, datums, tolerances, operation and access requirements; datum review before concept; concept review before finalization.</td><td>Proposed first paid pilot because an existing fixture workflow is available. Choose one supported construction and part family first.</td></tr>
+<tr><td>Drawing</td><td>Proposed: orthographic views, selected dimensions, and a reviewed drawing PDF.</td><td>View arrangement, units, scale, datums, tolerances, title information; user checks dimension intent and completeness.</td><td>Future paid scope; drawing skill not identified in available catalog.</td></tr>
+<tr><td>Costing</td><td>Proposed: itemized estimate with editable assumptions and cost breakdown.</td><td>Process, material, quantity, stock, setup, cycle-time assumptions, rates, waste, currency, and exclusions.</td><td>Future paid scope; costing skill not identified in available catalog. Choose one manufacturing process before specifying formulas.</td></tr>
+</tbody></table>
+<ul><li>Carry the same source revision and selected geometry into paid jobs; ask for missing engineering inputs rather than asking users to start over.</li><li>Before any server upload, explain processing and retention and obtain explicit consent. Account creation and payment belong to the paid continuation.</li><li>Show deliverable, price, included revisions, and expected turnaround before purchase. Pricing model and failed-job/refund policy remain open.</li><li>Unavailable paid tools are labeled “Coming soon”; do not sell them as working automation.</li></ul>
+
+<h2>6. Screens and states</h2>
+<table><thead><tr><th>Screen / state</th><th>What it shows</th><th>Who can act</th></tr></thead><tbody>
+<tr><td>Landing / empty</td><td>Single drop area, supported formats, local-processing statement if verified, sample part.</td><td>Anyone.</td></tr>
+<tr><td>Loading / unit confirmation</td><td>Import progress, cancellation, detected format, unresolved units.</td><td>Anyone; measurements blocked while scale is unknown.</td></tr>
+<tr><td>Viewer / measure</td><td>Part, overall size, compact measurement controls, selected features, annotations, export.</td><td>Anyone; unsupported measurements disabled with a reason.</td></tr>
+<tr><td>Import / geometry error</td><td>Specific cause, retry, supported alternative; clear partial-import warning.</td><td>Anyone; no apparently complete output from incomplete geometry.</td></tr>
+<tr><td>Export preview</td><td>Final view, legible labels, units, measurement list, output type.</td><td>Anyone.</td></tr>
+<tr><td>Paid handoff</td><td>Chosen service, scope and price, carried-forward part, upload consent and missing inputs.</td><td>User may explore offer; proposed account required to submit job.</td></tr>
+<tr><td>Paid job / review / delivery</td><td>Progress, input requests, revision status, review actions, deliverables or actionable failure.</td><td>Job owner; engineering review roles to be defined for the paid pilot.</td></tr>
+</tbody></table>
+
+<h2>7. Information carried through the journey</h2>
+<p class="meta">Conceptual product data only; this does not authorize a database schema. Free session data is transient unless the user downloads output.</p>
+<table><thead><tr><th>Field / object</th><th>Type / shape</th><th>Source</th></tr></thead><tbody>
+<tr><td>Part identity</td><td>Source filename, format, content fingerprint, source revision.</td><td>Imported file; held locally during free use.</td></tr>
+<tr><td>Geometry context</td><td>Units, part frame, import status, CAD or mesh representation, supported feature references.</td><td>Importer and confirmed unit selection.</td></tr>
+<tr><td>Measurement</td><td>Type, selected features/points, value, units, CAD/mesh basis, label and placement.</td><td>Geometry calculation plus user selection; display rounding never changes stored value.</td></tr>
+<tr><td>View / export</td><td>Camera, projection, visible annotations, page/output settings.</td><td>User's active view and export choices.</td></tr>
+<tr><td>Paid job</td><td>Service, owner, source revision, requirements, consent, commercial terms, status, deliverables.</td><td>Explicit paid continuation; storage/retention policy unresolved.</td></tr>
+<tr><td>Review evidence</td><td>Input assumptions, source version, review notes, accepted revision and verification status.</td><td>User and service workflow. Changed source invalidates stale geometry references and affected reviews.</td></tr>
+</tbody></table>
+
+<h2>8. Production release gates</h2>
+<table><thead><tr><th>Gate</th><th>Acceptance evidence</th></tr></thead><tbody>
+<tr><td>Geometry accuracy</td><td>Compare every supported measurement type against reference CAD values across a fixed corpus including units, transforms, small/large parts and curved features. Agree the numeric tolerance before implementation; all supported cases must pass.</td></tr>
+<tr><td>Geometry authority</td><td>Rendering tessellation and camera changes do not alter CAD-derived values. Mesh-derived values remain labeled in the viewer and every export. No silent fallback from CAD to mesh measurement.</td></tr>
+<tr><td>Unit correctness</td><td>mm/in fixtures produce equivalent physical values; STL measurement cannot begin without confirmed units; decimal rounding is consistent in viewer and export.</td></tr>
+<tr><td>Import robustness</td><td>Supported valid files load; malformed, unsupported, oversized, and multi-part inputs end in recoverable states. Partial imports cannot masquerade as complete models.</td></tr>
+<tr><td>Usability</td><td>Proposed pilot target: at least 8 of 10 representative users independently import, obtain a specified dimension, and export within two minutes on an agreed sample part.</td></tr>
+<tr><td>Export integrity</td><td>PNG and PDF reproduce selected dimensions, units and orientation; labels are readable without clipping; exported values match the viewer.</td></tr>
+<tr><td>Performance</td><td>Set file/geometry limits and benchmark device/browser matrix during feasibility. Measure first usable view and responsiveness; publish limits and enforce cancellation. Numeric targets remain open until measured.</td></tr>
+<tr><td>Privacy</td><td>Network inspection confirms free model data stays on-device if promised. Paid upload occurs only after consent; deletion and retention behavior match stated policy.</td></tr>
+<tr><td>Paid fixture quality</td><td>Existing datum, concept and finalization gates remain intact. Separate CAD verification, fabrication readiness, calibration and inspection validation; package generation alone is not production approval.</td></tr>
+</tbody></table>
+<div class="callout"><strong>Feasibility blocker to resolve first:</strong> Online3DViewer provides a viewer foundation, but the documented STEP importer exposes triangulated output. Exact CAD feature measurements require additional geometry access. Prove that access and acceptable local performance before committing to both “accurate production measurement” and “entirely local.”</div>
+
+<h2>9. Delivery sequence</h2>
+<table><thead><tr><th>Phase</th><th>Deliverable</th><th>Exit condition</th></tr></thead><tbody>
+<tr><td>0 · Feasibility</td><td>Compare reuse of Online3DViewer with a focused custom interface; prove CAD measurements, unit handling and representative STEP loading; inventory dependency licenses.</td><td>Known measurement accuracy, geometry access, local-processing feasibility and supported workload. Product owner resolves any necessary scope change.</td></tr>
+<tr><td>1 · Free private pilot</td><td>Full single-part import → measure → PNG/PDF flow.</td><td>Accuracy, export and usability gates pass on agreed corpus and pilot users.</td></tr>
+<tr><td>2 · Free public launch</td><td>Robust errors, privacy verification, published limits, support/reporting path and anonymous funnel measurement.</td><td>All free release gates pass; paid interest can be measured without promising unavailable tools.</td></tr>
+<tr><td>3 · One paid pilot</td><td>Proposed fixture workflow with bounded part family and construction, reviewed concepts and explicit finalization.</td><td>Deliverable scope, price, review responsibility and engineering validation agreed; first paid jobs successfully delivered.</td></tr>
+<tr><td>4 · Paid expansion</td><td>Drawing and costing as separately scoped tools; broader fixture coverage.</td><td>Demand and delivery quality justify each module; its inputs and acceptance criteria are specified.</td></tr>
+</tbody></table>
+
+<h2>10. Measures of success</h2>
+<table><thead><tr><th>Metric</th><th>Definition</th></tr></thead><tbody>
+<tr><td>Free activation</td><td>Sessions completing at least one measurement and export ÷ sessions with a successful supported import.</td></tr>
+<tr><td>Time to value</td><td>Median and 95th percentile time from file selection to first completed measurement, segmented by supported workload.</td></tr>
+<tr><td>Reliability</td><td>Import failures, measurement failures and export failures, each reported against its attempts.</td></tr>
+<tr><td>Paid intent</td><td>Activated sessions opening a paid service brief ÷ activated sessions; distinguish interest in unavailable services.</td></tr>
+<tr><td>Paid conversion / economics</td><td>Purchased jobs ÷ qualified service briefs; track compute, engineering review time, revisions, refunds and margin per delivered job.</td></tr>
+<tr><td>Paid outcome</td><td>Jobs accepted by customer, revision count, delivery time and failure rate. Customer acceptance does not replace engineering verification.</td></tr>
+</tbody></table>
+<p class="meta">Commercial targets and analytics consent approach remain open. Collect event categories and timings, not customer geometry or identifying file metadata.</p>
+
+<h2>11. Non-goals for the first release</h2>
+<ul><li>Native SolidWorks/Inventor import, large assembly workflows, geometry editing, or a CAD replacement.</li><li>Automatic discovery of all critical dimensions, inferred tolerances, GD&amp;T, or manufacturing certification.</li><li>Full engineering drawings, fixture generation or costing inside the free viewer.</li><li>Accounts, cloud libraries, collaboration, saved editable projects, and shared model links for free users.</li><li>Unbounded file support, full mobile editing, or all paid modules launching together.</li></ul>
+
+<h2>12. Decisions still needed</h2>
+<ol><li><strong>First paying customer and part family:</strong> welding workshops, checking/inspection users, or another segment? Supply representative, shareable parts for validation.</li><li><strong>Paid priority:</strong> fixture is the proposal; confirm whether drawing or costing should come first.</li><li><strong>Existing assets:</strong> identify the drawing and costing skills; confirm whether “Vibfixture” is the fixture module or umbrella brand.</li><li><strong>Precision and workload:</strong> agreed measurement tolerance, typical/max file complexity, supported browsers and benchmark hardware.</li><li><strong>Paid commercial model:</strong> per job, credits, subscription, or reviewed service; pricing, revisions, failed-job handling and turnaround.</li><li><strong>Engineering responsibility:</strong> who reviews paid outputs, which checks are automatic, and who authorizes fabrication or inspection use?</li><li><strong>Data policy:</strong> paid upload hosting, retention, deletion and any organizational restrictions.</li></ol>
+
+<h2>13. Basis and references</h2>
+<ul><li>User decisions in this discussion define the free acquisition tool and paid engineering services.</li><li><a href="https://github.com/kovacsv/Online3DViewer">Online3DViewer repository</a>: viewer/library foundation, supported formats and dependencies. Reuse is a proposal, not an audited production-readiness claim.</li><li><a href="https://3dviewer.net/info/index.html">Online3DViewer manual</a>: local loading and format support.</li><li><a href="https://github.com/kovacsv/occt-import-js">occt-import-js documentation</a>: browser STEP import, unit options, triangulated output and face-to-triangle mapping.</li><li>Existing local <code>design-fixture</code> skill: weld/checking workflows, datum review, concept and finalization gates, exact CAD authority, and distinct verification statuses. Reviewed for product scope; no fixture job executed.</li><li>Drawing and costing workflows are unverified proposals pending the corresponding skill references.</li></ul>
+<footer>Scope document only. No application code, schema, paid service, deployment or production certification is created by this PRD.</footer>
+</main></body></html>
