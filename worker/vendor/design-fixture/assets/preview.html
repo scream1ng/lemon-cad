@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture concept review</title>
+<style>
+html,body{margin:0;height:100%;font:14px system-ui;background:#e8edf2;color:#152a38}#view{position:absolute;inset:0}aside{position:absolute;top:12px;left:12px;max-height:85%;overflow:auto;width:235px;background:#fffe;padding:14px;border-radius:12px;box-shadow:0 3px 16px #1232}h1{font-size:17px;margin:0 0 8px}p{font-size:12px}button{padding:6px;margin:2px;border:1px solid #c1cdd5;background:white;border-radius:5px;cursor:pointer}label{display:block;margin:5px 0;font-size:12px}#notice{position:absolute;bottom:10px;left:12px;right:12px;background:#fffe;padding:9px;border-radius:7px;font-size:12px}#failure{padding:8px;color:#873700}details{margin-top:12px}canvas{display:block}
+#pins{position:absolute;inset:0;pointer-events:none;overflow:hidden}.pin{position:absolute;pointer-events:auto}.pin b{position:absolute;left:-11px;top:-26px;display:flex;width:22px;height:22px;border-radius:50% 50% 50% 3px;background:#c0392b;color:#fff;font:600 12px system-ui;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 7px #0006;transform:rotate(-45deg)}.pin b span{transform:rotate(45deg)}.pin .box{position:absolute;left:16px;bottom:8px;width:196px;background:#fff;border-radius:9px;box-shadow:0 3px 14px #1234;padding:7px}.pin textarea{width:100%;box-sizing:border-box;height:54px;font:12px system-ui;border:1px solid #c1cdd5;border-radius:5px;resize:vertical}.pin.shut .box{display:none}.pin.flip .box{left:auto;right:16px}.pin .del{float:right;padding:3px 6px;font-size:11px}
+body.commenting #view canvas{cursor:crosshair}#comment.on{background:#c0392b;color:#fff;border-color:#c0392b}#copymsg{font-size:11px;color:#42606f}
+#feedback{position:absolute;top:12px;right:12px;width:245px;max-height:85%;overflow:auto;background:#fffe;padding:14px;border-radius:12px;box-shadow:0 3px 16px #1232}pre{font:11px ui-monospace,monospace;white-space:pre-wrap;margin:6px 0 0}
+#copybuffer{width:100%;box-sizing:border-box;height:110px;font:11px ui-monospace,monospace;margin:6px 0;resize:vertical}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head><body><div id="view"></div><aside><h1 id="title">Fixture concept</h1><p id="mode"></p>
+<div id="cameras"><button data-view="iso">Iso</button><button data-view="front">Front</button><button data-view="right">Right</button><button data-view="top">Top</button></div>
+<p>Drag: rotate · right-drag: pan · wheel: zoom. Click a component for its ID.</p>
+<div id="groups"></div><p id="selected">Selected: none</p><details><summary>Component visibility</summary><div id="parts"></div></details>
+<div id="failure">Loading 3D modules…</div></aside>
+<div id="feedback"><h1>Comments</h1><button id="comment">Comment mode</button><button id="copynotes">Copy comments</button><p id="copymsg">Turn on Comment mode to pin notes.</p><textarea id="copybuffer" aria-label="Feedback to copy" readonly hidden></textarea><pre id="notes">none</pre><p>Review notes only. A comment never edits the spec — revise the responsible spec and re-run <code>workflow.py concept</code>.</p></div>
+<div id="notice">CONCEPT ONLY · approximate mesh · exact measurements/validation remain in OCP CAD. Hardware shown in supplied pose, not verified closed. Comment pins plus Copy comments are the quickest feedback; a plain window capture still works.</div>
+<script id="scene-data" type="application/octet-stream">__SCENE_GZIP_BASE64__</script>
+<script type="module">
+try {
+const THREE = await import('three'); const {OrbitControls} = await import('three/addons/controls/OrbitControls.js');
+const packed=Uint8Array.from(atob(document.querySelector('#scene-data').textContent.trim()),c=>c.charCodeAt(0));
+const data=JSON.parse(await new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+document.querySelector('#title').textContent=`${data.project_id} · ${data.revision}`;
+document.querySelector('#mode').textContent=`${data.fixture_kind} / ${data.construction} · ${data.units}`;
+const scene=new THREE.Scene();scene.background=new THREE.Color('#e8edf2');
+const camera=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,100000);camera.up.set(0,0,1);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);document.querySelector('#view').append(renderer.domElement);
+const pins=document.createElement('div');pins.id='pins';document.querySelector('#view').append(pins);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x506070,2.3));const light=new THREE.DirectionalLight(0xffffff,2.4);light.position.set(-1,-2,4);scene.add(light);
+const colors={workpiece:0xddaa55,fixture:0x377994,hardware:0xba6262};const meshes=[];const groupOn={workpiece:true,fixture:true,hardware:true};
+function visibility(){for(const m of meshes)m.visible=groupOn[m.userData.group]&&m.userData.individual;}
+for(const component of data.components){const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(component.positions,3));geometry.setIndex(component.indices);geometry.computeVertexNormals();const material=new THREE.MeshStandardMaterial({color:colors[component.group],roughness:.65,metalness:.12,side:THREE.DoubleSide});const mesh=new THREE.Mesh(geometry,material);mesh.name=component.id;mesh.userData={group:component.group,individual:true};scene.add(mesh);meshes.push(mesh);const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=true;input.onchange=()=>{mesh.userData.individual=input.checked;visibility();};label.append(input,document.createTextNode(component.id));document.querySelector('#parts').append(label);}
+for(const group of Object.keys(groupOn)){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=true;input.onchange=()=>{groupOn[group]=input.checked;visibility();};label.append(input,document.createTextNode(group));document.querySelector('#groups').append(label);}
+const bounds=new THREE.Box3();for(const mesh of meshes)bounds.expandByObject(mesh);const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());const radius=Math.max(size.x,size.y,size.z,1)*1.9;controls.target.copy(center);camera.near=Math.max(radius/10000,.001);camera.far=radius*100;camera.updateProjectionMatrix();scene.add(new THREE.AxesHelper(radius*.12));
+function preset(name){const dirs={iso:[1,-1,1],front:[0,-1,0],right:[1,0,0],top:[0,0,1]};camera.up.set(0,name==='top'?1:0,name==='top'?0:1);camera.position.copy(center).add(new THREE.Vector3(...dirs[name]).normalize().multiplyScalar(radius));controls.target.copy(center);controls.update();}preset('iso');
+for(const button of document.querySelectorAll('[data-view]'))button.onclick=()=>preset(button.dataset.view);
+// Click-to-comment: a note is anchored to a 3D point on the concept, so its pin tracks the view.
+let commenting=false,notes=[];
+function round(v){return Math.round(v*1000)/1000;}
+const commentButton=document.querySelector('#comment');
+commentButton.onclick=()=>{commenting=!commenting;commentButton.classList.toggle('on',commenting);say(commenting?'Click a rib, block or the part to pin a note. Click Comment mode again to stop.':'Turn on Comment mode to pin notes.');document.body.classList.toggle('commenting',commenting);};
+function renumber(){notes.forEach((note,i)=>{note.n=i+1;note.el.querySelector('b span').textContent=note.n;});}
+function reportNotes(){document.querySelector('#notes').textContent=notes.length
+  ?notes.map(note=>`${note.n}. ${note.text||'(empty)'}  @ [${note.point.toArray().map(round).join(', ')}]${note.on?' on '+note.on:''}`).join('\n'):'none';}
+function addNote(point,on){
+  const note={point:point.clone(),on,text:'',n:notes.length+1};
+  const el=document.createElement('div');el.className='pin';
+  el.innerHTML=`<b><span>${note.n}</span></b><div class="box"><textarea placeholder="What should change here?"></textarea><button class="del">Delete</button></div>`;
+  el.querySelector('b').onclick=event=>{event.stopPropagation();el.classList.toggle('shut');};
+  el.querySelector('.del').onclick=()=>{notes.splice(notes.indexOf(note),1);el.remove();renumber();reportNotes();};
+  const area=el.querySelector('textarea');area.oninput=()=>{note.text=area.value;reportNotes();};
+  note.el=el;pins.append(el);notes.push(note);reportNotes();area.focus();
+}
+function placePins(){
+  const width=renderer.domElement.clientWidth,height=renderer.domElement.clientHeight,v=new THREE.Vector3();
+  for(const note of notes){v.copy(note.point).project(camera);
+    note.el.style.display=v.z>1?'none':'block';
+    note.screen=[(v.x*.5+.5)*width,(-v.y*.5+.5)*height];
+    note.el.style.left=note.screen[0]+'px';note.el.style.top=note.screen[1]+'px';
+    note.el.classList.toggle('flip',note.screen[0]>width-230);}
+}
+// Keep the complete feedback selectable when an embedded viewer blocks clipboard access.
+function copyText(id){copyFeedback(document.querySelector(id).textContent);}
+async function copyFeedback(text){
+  const buffer=document.querySelector('#copybuffer');buffer.value=text;buffer.hidden=false;buffer.focus();buffer.select();
+  say('Text selected — press ⌘C / Ctrl+C, then paste into chat.');
+  try{await navigator.clipboard.writeText(text);buffer.hidden=true;say('Copied — paste into chat.');}catch{}
+}
+function say(message){document.querySelector('#copymsg').textContent=message;}
+document.querySelector('#copynotes').onclick=()=>copyText('#notes');
+const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down;
+renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const rect=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);ray.setFromCamera(pointer,camera);const hit=ray.intersectObjects(meshes.filter(m=>m.visible))[0];
+if(commenting){if(hit)addNote(hit.point,hit.object.name);return;}
+for(const m of meshes)m.material.emissive.setHex(0);if(hit)hit.object.material.emissive.setHex(0x253d17);document.querySelector('#selected').textContent='Selected: '+(hit?hit.object.name:'none');});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+document.querySelector('#failure').style.display='none';function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);if(notes.length)placePins();}animate();
+}catch(error){document.querySelector('#failure').prepend(document.createTextNode('Interactive preview unavailable: '+error.message+'. '));}
+</script></body></html>

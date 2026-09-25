@@ -1,0 +1,1650 @@
+{
+  "schema_version": "1.2",
+  "project_id": "EXAMPLE-FLAT-PLATE",
+  "revision": "R1",
+  "units": "mm",
+  "thickness_mm": 5.0,
+  "min_width_mm": 10.0,
+  "plates": [
+    {
+      "name": "BASE",
+      "part_number": "FP01",
+      "role": "Base",
+      "origin": [
+        0.0,
+        0.0,
+        -2.5
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "w": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "outer": [
+        [
+          -160,
+          -120
+        ],
+        [
+          160,
+          -120
+        ],
+        [
+          160,
+          150
+        ],
+        [
+          -160,
+          150
+        ]
+      ],
+      "holes": [],
+      "contacts": []
+    },
+    {
+      "name": "R1",
+      "part_number": "FP02",
+      "role": "Locator rib",
+      "origin": [
+        0.0,
+        -30.0,
+        0.0
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "outer": [
+        [
+          -65.0,
+          50.0
+        ],
+        [
+          -60.0,
+          50.0
+        ],
+        [
+          -60.0,
+          60.0
+        ],
+        [
+          -40.0,
+          60.0
+        ],
+        [
+          -40.0,
+          50.0
+        ],
+        [
+          40.0,
+          50.0
+        ],
+        [
+          40.0,
+          60.0
+        ],
+        [
+          60.0,
+          60.0
+        ],
+        [
+          60.0,
+          50.0
+        ],
+        [
+          65.0,
+          50.0
+        ],
+        [
+          65.0,
+          0.0
+        ],
+        [
+          14.6,
+          0.0
+        ],
+        [
+          14.6,
+          20.0
+        ],
+        [
+          9.4,
+          20.0
+        ],
+        [
+          9.4,
+          0.0
+        ],
+        [
+          -9.4,
+          0.0
+        ],
+        [
+          -9.4,
+          20.0
+        ],
+        [
+          -14.6,
+          20.0
+        ],
+        [
+          -14.6,
+          0.0
+        ],
+        [
+          -65.0,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [
+        "A1",
+        "A2"
+      ],
+      "seat": "BASE"
+    },
+    {
+      "name": "R2",
+      "part_number": "FP03",
+      "role": "Locator rib",
+      "origin": [
+        0.0,
+        30.0,
+        0.0
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "outer": [
+        [
+          -25.0,
+          50.0
+        ],
+        [
+          -10.0,
+          50.0
+        ],
+        [
+          -10.0,
+          60.0
+        ],
+        [
+          10.0,
+          60.0
+        ],
+        [
+          10.0,
+          50.0
+        ],
+        [
+          25.0,
+          50.0
+        ],
+        [
+          25.0,
+          0.0
+        ],
+        [
+          14.6,
+          0.0
+        ],
+        [
+          14.6,
+          20.0
+        ],
+        [
+          9.4,
+          20.0
+        ],
+        [
+          9.4,
+          0.0
+        ],
+        [
+          -9.4,
+          0.0
+        ],
+        [
+          -9.4,
+          20.0
+        ],
+        [
+          -14.6,
+          20.0
+        ],
+        [
+          -14.6,
+          0.0
+        ],
+        [
+          -25.0,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [
+        "A3"
+      ],
+      "seat": "BASE"
+    },
+    {
+      "name": "S1",
+      "part_number": "FP04",
+      "role": "Locator rib",
+      "origin": [
+        -40.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          -90.0,
+          0.0
+        ],
+        [
+          -90.0,
+          70.0
+        ],
+        [
+          -50.0,
+          70.0
+        ],
+        [
+          -50.0,
+          0.0
+        ],
+        [
+          -67.4,
+          0.0
+        ],
+        [
+          -67.4,
+          20.0
+        ],
+        [
+          -72.6,
+          20.0
+        ],
+        [
+          -72.6,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [
+        "B1"
+      ],
+      "seat": "BASE"
+    },
+    {
+      "name": "S2",
+      "part_number": "FP04",
+      "role": "Locator rib",
+      "origin": [
+        40.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          -90.0,
+          0.0
+        ],
+        [
+          -90.0,
+          70.0
+        ],
+        [
+          -50.0,
+          70.0
+        ],
+        [
+          -50.0,
+          0.0
+        ],
+        [
+          -67.4,
+          0.0
+        ],
+        [
+          -67.4,
+          20.0
+        ],
+        [
+          -72.6,
+          20.0
+        ],
+        [
+          -72.6,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [
+        "B2"
+      ],
+      "seat": "BASE"
+    },
+    {
+      "name": "C1",
+      "part_number": "FP05",
+      "role": "Locator rib",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "outer": [
+        [
+          -115.0,
+          0.0
+        ],
+        [
+          -115.0,
+          70.0
+        ],
+        [
+          -80.0,
+          70.0
+        ],
+        [
+          -80.0,
+          0.0
+        ],
+        [
+          -97.4,
+          0.0
+        ],
+        [
+          -97.4,
+          20.0
+        ],
+        [
+          -102.6,
+          20.0
+        ],
+        [
+          -102.6,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [
+        "C1"
+      ],
+      "seat": "BASE"
+    },
+    {
+      "name": "K1",
+      "part_number": "FP06",
+      "role": "Clamp support cheek",
+      "origin": [
+        -22.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          84.0,
+          0.0
+        ],
+        [
+          84.0,
+          61.0
+        ],
+        [
+          127.0,
+          61.0
+        ],
+        [
+          127.0,
+          0.0
+        ],
+        [
+          102.6,
+          0.0
+        ],
+        [
+          102.6,
+          20.0
+        ],
+        [
+          97.4,
+          20.0
+        ],
+        [
+          97.4,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "K2",
+      "part_number": "FP06",
+      "role": "Clamp support cheek",
+      "origin": [
+        22.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          84.0,
+          0.0
+        ],
+        [
+          84.0,
+          61.0
+        ],
+        [
+          127.0,
+          61.0
+        ],
+        [
+          127.0,
+          0.0
+        ],
+        [
+          102.6,
+          0.0
+        ],
+        [
+          102.6,
+          20.0
+        ],
+        [
+          97.4,
+          20.0
+        ],
+        [
+          97.4,
+          0.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "P_T1",
+      "part_number": "FP07",
+      "role": "GH-201-B mount plate; M5 x 0.8 tap after laser",
+      "origin": [
+        0.0,
+        0.0,
+        63.5
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "w": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "outer": [
+        [
+          -30,
+          80.4
+        ],
+        [
+          30,
+          80.4
+        ],
+        [
+          30,
+          130.4
+        ],
+        [
+          -30,
+          130.4
+        ]
+      ],
+      "holes": [],
+      "contacts": []
+    },
+    {
+      "name": "X1",
+      "part_number": "FP08",
+      "role": "Cross brace",
+      "brace_merge_exception": {
+        "with": "X2",
+        "reason": "SYNTHETIC EXAMPLE, not a user decision: twin brace pair kept to exercise same-part-number (FP08 x2) tab families; a real fixture merges them"
+      },
+      "origin": [
+        -12.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          45.0,
+          0.0
+        ],
+        [
+          -45.0,
+          0.0
+        ],
+        [
+          -45.0,
+          40.0
+        ],
+        [
+          -32.6,
+          40.0
+        ],
+        [
+          -32.6,
+          20.0
+        ],
+        [
+          -27.4,
+          20.0
+        ],
+        [
+          -27.4,
+          40.0
+        ],
+        [
+          27.4,
+          40.0
+        ],
+        [
+          27.4,
+          20.0
+        ],
+        [
+          32.6,
+          20.0
+        ],
+        [
+          32.6,
+          40.0
+        ],
+        [
+          45.0,
+          40.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "X2",
+      "part_number": "FP08",
+      "role": "Cross brace",
+      "origin": [
+        12.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          45.0,
+          0.0
+        ],
+        [
+          -45.0,
+          0.0
+        ],
+        [
+          -45.0,
+          40.0
+        ],
+        [
+          -32.6,
+          40.0
+        ],
+        [
+          -32.6,
+          20.0
+        ],
+        [
+          -27.4,
+          20.0
+        ],
+        [
+          -27.4,
+          40.0
+        ],
+        [
+          27.4,
+          40.0
+        ],
+        [
+          27.4,
+          20.0
+        ],
+        [
+          32.6,
+          20.0
+        ],
+        [
+          32.6,
+          40.0
+        ],
+        [
+          45.0,
+          40.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "XS",
+      "part_number": "FP09",
+      "role": "Cross brace",
+      "origin": [
+        0.0,
+        -70.0,
+        0.0
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "outer": [
+        [
+          55.0,
+          0.0
+        ],
+        [
+          -55.0,
+          0.0
+        ],
+        [
+          -55.0,
+          40.0
+        ],
+        [
+          -42.6,
+          40.0
+        ],
+        [
+          -42.6,
+          20.0
+        ],
+        [
+          -37.4,
+          20.0
+        ],
+        [
+          -37.4,
+          40.0
+        ],
+        [
+          37.4,
+          40.0
+        ],
+        [
+          37.4,
+          20.0
+        ],
+        [
+          42.6,
+          20.0
+        ],
+        [
+          42.6,
+          40.0
+        ],
+        [
+          55.0,
+          40.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "XC",
+      "part_number": "FP10",
+      "role": "Cross brace",
+      "origin": [
+        -100.0,
+        0.0,
+        0.0
+      ],
+      "u": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "outer": [
+        [
+          30.0,
+          40.0
+        ],
+        [
+          30.0,
+          0.0
+        ],
+        [
+          -30.0,
+          0.0
+        ],
+        [
+          -30.0,
+          40.0
+        ],
+        [
+          -2.6,
+          40.0
+        ],
+        [
+          -2.6,
+          20.0
+        ],
+        [
+          2.6,
+          20.0
+        ],
+        [
+          2.6,
+          40.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    },
+    {
+      "name": "XK",
+      "part_number": "FP11",
+      "role": "Cross brace",
+      "origin": [
+        0.0,
+        100.0,
+        0.0
+      ],
+      "u": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "v": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "w": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "outer": [
+        [
+          35.0,
+          0.0
+        ],
+        [
+          -35.0,
+          0.0
+        ],
+        [
+          -35.0,
+          40.0
+        ],
+        [
+          -24.6,
+          40.0
+        ],
+        [
+          -24.6,
+          20.0
+        ],
+        [
+          -19.4,
+          20.0
+        ],
+        [
+          -19.4,
+          40.0
+        ],
+        [
+          19.4,
+          40.0
+        ],
+        [
+          19.4,
+          20.0
+        ],
+        [
+          24.6,
+          20.0
+        ],
+        [
+          24.6,
+          40.0
+        ],
+        [
+          35.0,
+          40.0
+        ]
+      ],
+      "holes": [],
+      "contacts": [],
+      "seat": "BASE"
+    }
+  ],
+  "joints": [
+    {
+      "a": "R1",
+      "b": "X1",
+      "xy": [
+        -12.0,
+        -30.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "R1",
+      "b": "X2",
+      "xy": [
+        12.0,
+        -30.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "R2",
+      "b": "X1",
+      "xy": [
+        -12.0,
+        30.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "R2",
+      "b": "X2",
+      "xy": [
+        12.0,
+        30.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "S1",
+      "b": "XS",
+      "xy": [
+        -40.0,
+        -70.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "S2",
+      "b": "XS",
+      "xy": [
+        40.0,
+        -70.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "C1",
+      "b": "XC",
+      "xy": [
+        -100.0,
+        0.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "K1",
+      "b": "XK",
+      "xy": [
+        -22.0,
+        100.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    },
+    {
+      "a": "K2",
+      "b": "XK",
+      "xy": [
+        22.0,
+        100.0
+      ],
+      "lap_height_mm": 40.0,
+      "slot_width_mm": 5.2,
+      "a_slot": "bottom",
+      "b_slot": "top"
+    }
+  ],
+  "assembly_layers": [
+    [
+      "X1",
+      "X2",
+      "XS",
+      "XC",
+      "XK"
+    ],
+    [
+      "R1",
+      "R2",
+      "S1",
+      "S2",
+      "C1",
+      "K1",
+      "K2"
+    ],
+    [
+      "P_T1"
+    ]
+  ],
+  "contacts": [
+    {
+      "name": "A1",
+      "contact": [
+        -50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "R1",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -50.0,
+          -30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "A2",
+      "contact": [
+        50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "R1",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          50.0,
+          -30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "A3",
+      "contact": [
+        0.0,
+        30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "R2",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          0.0,
+          30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "B1",
+      "contact": [
+        -40.0,
+        -50.0,
+        63.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "S1",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -40.0,
+          -50.0,
+          63.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -1.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "B2",
+      "contact": [
+        40.0,
+        -50.0,
+        63.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "S2",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          40.0,
+          -50.0,
+          63.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -1.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "C1",
+      "contact": [
+        -80.0,
+        0.0,
+        63.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "C1",
+      "role": "Tertiary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -80.0,
+          0.0,
+          63.0
+        ],
+        "outward_normal": [
+          -1.0,
+          -0.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    }
+  ],
+  "locating_groups": {
+    "plate": [
+      "A1",
+      "A2",
+      "A3",
+      "B1",
+      "B2",
+      "C1"
+    ]
+  },
+  "clamps": [
+    {
+      "tag": "T1",
+      "hardware": "GH-201-B",
+      "mount_plate": "P_T1",
+      "contact": [
+        0.0,
+        30.0,
+        66.0
+      ],
+      "surface_normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "arm_direction": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "apply_hole_pattern": true,
+      "part": "Plate",
+      "support": "A3"
+    }
+  ],
+  "workpiece": {
+    "placed_step": "workpiece.step",
+    "source_files": [
+      "workpiece.step"
+    ],
+    "parts": {
+      "Plate": "Part_Plate"
+    },
+    "source_to_fixture": [
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ]
+    ]
+  },
+  "insertion": {
+    "offsets_mm": [
+      0.2,
+      0.5,
+      1,
+      2,
+      4,
+      8,
+      15,
+      30,
+      60,
+      100
+    ],
+    "default_axis": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "along_w": []
+  },
+  "supports": [
+    {
+      "id": "A1",
+      "plate": "R1",
+      "part": "Plate",
+      "contact": [
+        -50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "A2",
+      "plate": "R1",
+      "part": "Plate",
+      "contact": [
+        50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "A3",
+      "plate": "R2",
+      "part": "Plate",
+      "contact": [
+        0.0,
+        30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "retention": [
+    {
+      "members": [
+        "R1",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "R2",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "S1",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "S2",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "C1",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "K1",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "K2",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "X1",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "X2",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "XS",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "XC",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "XK",
+        "BASE"
+      ],
+      "method": "weld",
+      "proposed_fillet_leg_mm": 3,
+      "proposed_runs": "two 20 mm runs on accessible base edges, symmetric about the rib centre",
+      "status": "unknown",
+      "reason": "example design proposal; weld strength and distortion not validated"
+    },
+    {
+      "members": [
+        "K1",
+        "P_T1"
+      ],
+      "method": "Cap rests on cheek top; position from base datums during dry fit, then propose two 20 mm, 3 mm underside fillet welds. Verify cap placement and weld distortion.",
+      "status": "unknown"
+    },
+    {
+      "members": [
+        "K2",
+        "P_T1"
+      ],
+      "method": "Cap rests on cheek top; position from base datums during dry fit, then propose two 20 mm, 3 mm underside fillet welds. Verify cap placement and weld distortion.",
+      "status": "unknown"
+    }
+  ],
+  "assumptions": [
+    "Demonstration workpiece and proposed fixture weld sizes; requires engineering validation.",
+    "Operator seats secondary and tertiary datums; positive lateral seating during welding remains unresolved.",
+    "Bundled GH-201-B geometry is supplied-pose reference CAD; closed seating and motion require verification.",
+    "Actual GH-201-B STEP is inserted by the exporter in its supplied pose. Closed operation and spindle adjustment require verification."
+  ],
+  "assembly_locating": {
+    "master_part": "Plate",
+    "datum_rationale": "Single flat workpiece on three non-collinear supports.",
+    "mating_contacts": [],
+    "loading_stages": [
+      {
+        "id": "load-plate",
+        "parts": [
+          "Plate"
+        ],
+        "fixture_contacts": [
+          "A1",
+          "A2",
+          "A3",
+          "B1",
+          "B2",
+          "C1"
+        ],
+        "mating_contacts": [],
+        "seating_directions": {
+          "Plate": {
+            "Primary": [
+              0,
+              0,
+              -1
+            ],
+            "Secondary": [
+              0,
+              -1,
+              0
+            ],
+            "Tertiary": [
+              -1,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

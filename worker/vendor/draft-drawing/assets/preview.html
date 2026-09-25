@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft drawing review</title>
+<style>
+:root{--ink:#152a38;--muted:#5b6f7c;--line:#d5dde3;--hole:#1f5f99;--flange:#b3261e;--bend:#1e7a46;--dim:#152a38}
+html,body{margin:0;height:100%;font:14px/1.4 system-ui;background:#f4f6f8;color:var(--ink)}
+header{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;gap:14px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);z-index:5}
+header h1{font-size:16px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}header .mass{font-size:15px;font-weight:700;white-space:nowrap}
+#tabs{display:flex;gap:4px;margin-left:auto}#tabs button{font-weight:600}#tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+button{padding:6px 10px;border:1px solid #c1cdd5;background:#fff;border-radius:6px;cursor:pointer;font:600 13px system-ui;color:var(--ink)}
+#left{position:absolute;top:52px;left:0;bottom:0;width:360px;overflow:auto;background:#fff;border-right:1px solid var(--line);padding:14px 16px;box-sizing:border-box;z-index:4}
+#main{position:absolute;top:52px;left:360px;right:0;bottom:0}#view,#sheets{position:absolute;inset:0}#sheets{overflow:hidden;background:#cfd8df;display:none;cursor:grab}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:16px 0 6px}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #e6ebef;padding:4px 5px;text-align:left;vertical-align:top}th{font-size:11px;color:var(--muted);font-weight:600}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}tr.pick{cursor:pointer}tr.pick:hover{background:#f1f5f8}tr.sel{background:#dcebf7}tr.hot{background:#fff1c7}
+.big{font-size:22px;font-weight:700;margin:2px 0}.sub{font-size:12px;color:var(--muted)}.warn{color:#873700}.chip{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#toolbar{position:absolute;top:12px;left:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;z-index:3}#toolbar label{background:#fffd;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600}
+#overlay{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lab{position:absolute;pointer-events:auto;cursor:pointer;background:#fff;border:1.5px solid;border-radius:5px;padding:2px 7px;font:600 13px system-ui;white-space:nowrap;box-shadow:0 1px 4px #0002}
+.lab.hole{border-color:var(--hole);color:var(--hole)}.lab.flange{border-color:var(--flange);color:var(--flange)}.lab.bend{border-color:var(--bend);color:var(--bend)}.lab.hidden{opacity:.45}.lab.hot{background:#fff1c7;z-index:2}
+.dimlab{position:absolute;transform:translate(-50%,-50%);background:#f4f6f8;padding:0 5px;font:700 15px system-ui;color:var(--dim);white-space:nowrap}
+#left{display:none}#main{left:0!important}
+#tip{position:absolute;display:none;background:var(--ink);color:#fff;font:12px system-ui;padding:4px 8px;border-radius:5px;pointer-events:none;z-index:9}
+#edits{position:absolute;left:12px;bottom:44px;width:280px;max-height:60%;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 3px 16px #1232;z-index:6}#edits.shut>:not(.head){display:none}.head{display:flex;gap:6px;align-items:center}.head b{margin-right:auto}
+#comment.on{background:#c0392b;color:#fff;border-color:#c0392b}#copymsg{font-size:12px;color:var(--muted)}pre{font:12px ui-monospace,monospace;white-space:pre-wrap;margin:6px 0 0}
+#notice{position:absolute;bottom:8px;left:12px;right:12px;background:#fffe;border:1px solid var(--line);padding:6px 10px;border-radius:7px;font-size:12px;color:var(--muted);z-index:3}
+#failure{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:420px;margin:0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;color:#873700;font-size:13px;z-index:2}
+.pin{position:absolute;pointer-events:auto;z-index:7}.pin b{position:absolute;left:-11px;top:-26px;display:flex;width:22px;height:22px;border-radius:50% 50% 50% 3px;background:#c0392b;color:#fff;font:600 12px system-ui;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 7px #0006;transform:rotate(-45deg)}.pin b span{transform:rotate(45deg)}
+.pin .box{position:absolute;left:16px;bottom:8px;width:210px;background:#fff;border-radius:9px;box-shadow:0 3px 14px #1234;padding:7px}.pin textarea{width:100%;box-sizing:border-box;height:58px;font:13px system-ui;border:1px solid #c1cdd5;border-radius:5px;resize:vertical}.pin.shut .box{display:none}.pin.flip .box{left:auto;right:16px}.pin .del{float:right;padding:3px 6px;font-size:11px}
+body.commenting canvas,body.commenting #sheets{cursor:crosshair}
+#sheetwrap{position:absolute;left:0;top:0;transform-origin:0 0}.sheet{position:relative;width:1400px;background:#fff;box-shadow:0 2px 12px #0004;display:none}.sheet svg{display:block;width:100%;height:auto}.sheet .pin{transform:scale(var(--inv,1));transform-origin:0 0}
+#sheethelp{position:absolute;top:12px;left:12px;background:#fffd;border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-size:13px;z-index:3}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head><body>
+<header><h1 id="title">Draft drawing</h1><span class="mass" id="mass"></span><div id="tabs"></div></header>
+<div id="left"><h2>Parts</h2><table id="items"></table><div id="detail"></div><h2>Source</h2><p class="sub" id="source"></p></div>
+<div id="main">
+ <div id="view"><svg id="overlay"></svg><div id="labels"></div><p id="failure">Loading 3D… if blocked or offline, the sheets are still complete.</p>
+  <div id="toolbar"><button data-view="iso">Iso</button><button data-view="top">Top</button><button data-view="front">Front</button><button data-view="right">Right</button>
+   <label><input type="checkbox" data-show="dims" checked> Overall dims</label><label><input type="checkbox" data-show="hole"> <span class="chip" style="background:var(--hole)"></span>Holes / slots</label>
+   <label><input type="checkbox" data-show="flange"> <span class="chip" style="background:var(--flange)"></span>Flanges</label><label><input type="checkbox" data-show="bend"> <span class="chip" style="background:var(--bend)"></span>Bends</label></div></div>
+ <div id="sheets"><div id="sheethelp">Wheel: zoom · drag: pan · double-click: fit</div><div id="sheetwrap"></div></div>
+ <div id="tip"></div>
+ <div id="edits" class="shut"><div class="head"><b>Comments</b><button id="comment">Comment mode</button><button id="fold" title="Hide / show">+</button></div>
+  <p id="copymsg">Turn on Comment mode, then click the 3D part or a sheet to pin a note.</p><pre id="notes">none</pre><button id="copy">Copy all</button></div>
+ <div id="notice">DRAFT · 3D mesh is approximate, for orientation only · every number is the exact OCP measurement of the STEP file · faded labels are on the far side · items listed as NOT DIMENSIONED were not measured.</div>
+</div>
+<script id="scene-data" type="application/octet-stream">__SCENE_GZIP_BASE64__</script>
+<script type="module">
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const packed=Uint8Array.from(atob($('#scene-data').textContent.trim()),c=>c.charCodeAt(0));
+const data=JSON.parse(await new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+const f=v=>typeof v==='number'?(Math.round(v*100)/100).toString():v,esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+$('#title').textContent=data.title;
+$('#mass').textContent=`Total ${data.total_mass_kg} kg`;
+$('#source').innerHTML=`${esc(data.source.path.split('/').pop())} · sha ${data.source.sha256.slice(0,12)}<br>${data.density_kg_m3} kg/m³. <span class="warn">${esc(data.mass_note)}</span>`;
+$('#items').innerHTML='<tr><th>#</th><th>Part</th><th>Qty</th><th>kg</th></tr>'+data.items.map(r=>`<tr class="pick" data-item="${r.item}"><td>${r.item}</td><td>${esc(r.description)}${r.role==='sheet'?'':` <span class="warn">${r.role.replace(' (probable)','?')}</span>`}</td><td class="num">${r.qty}</td><td class="num">${r.mass_total_kg}</td></tr>`).join('');
+let selected=data.items[0].item,onSelect=()=>{};
+function table(title,head,rows){return rows.length?`<h2>${title}</h2><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr class="pick" data-mark="${r[0]}">${r.map((c,i)=>`<td class="${i>1?'num':''}">${esc(f(c))}</td>`).join('')}</tr>`).join('')}</table>`:'';}
+function detail(n){
+  selected=n;const r=data.items.find(r=>r.item===n);for(const tr of $$('tr[data-item]'))tr.classList.toggle('sel',+tr.dataset.item===n);
+  if(r.role!=='sheet'){$('#detail').innerHTML=`<h2>Item ${n}</h2><div class="big">${r.model_box_mm.map(f).join(' × ')}</div><p class="sub">model box, mm · ${r.role} · ${r.mass_each_kg} kg each × ${r.qty}</p><p class="warn">Not dimensioned: not a sheet body.</p>`;onSelect();return;}
+  const P=h=>h.part_mm.map(f).join(', ');
+  const open=[...(r.holes||[]).map(h=>[h.id,'Ø'+f(h.diameter_mm),P(h),h.feature]),...(r.slots||[]).map(h=>[h.id,`Slot ${f(h.width_mm)}×${f(h.length_mm)} (${h.long_dir})`,P(h),h.feature]),
+    ...(r.rectangles||[]).map(h=>[h.id,`□ ${f(h.width_mm)}×${f(h.length_mm)}`,P(h),h.feature]),...(r.cutouts||[]).map(h=>[h.id,`Cutout ~${h.size_mm.map(f).join('×')}`,P(h),h.feature])];
+  $('#detail').innerHTML=`<h2>Item ${n} · overall (X × Y × Z)</h2><div class="big">${r.overall_mm.map(f).join(' × ')} mm</div><p class="sub">t = ${f(r.thickness_mm)} mm · ${r.mass_each_kg} kg each · datum (0,0,0) = min corner of the part box</p>`+
+    table('Holes / slots',['ID','Size','X, Y, Z from datum','On'],open)+
+    table('Flanges',['ID','Span × width','Faces'],r.flanges.map(x=>[x.id,`${f(x.span_mm)} × ${f(x.width_mm)}${x.narrow?' (narrow)':''}`,x.faces]))+
+    table('Bends',['ID','Inner R','Angle','Length'],r.bends.map(b=>[b.id,'R'+f(b.inner_radius_mm),b.angle_deg+'°',b.length_mm]))+
+    (r.unknowns.length?`<h2 class="warn">Not dimensioned</h2><p class="warn">${r.unknowns.map(u=>esc(u.what+(u.counts?' '+JSON.stringify(u.counts):'')+(u.ids?' '+u.ids.join(', '):''))).join('<br>')}</p>`:'');
+  for(const tr of $$('tr[data-mark]'))tr.onclick=()=>hot(tr.dataset.mark);
+  onSelect();
+}
+let hotId=null;function hot(id){hotId=hotId===id?null:id;for(const tr of $$('tr[data-mark]'))tr.classList.toggle('hot',tr.dataset.mark===hotId);
+  for(const l of $$('.lab'))l.classList.toggle('hot',l.dataset.id===hotId);if(hotId)$(`tr[data-mark="${hotId}"]`)?.scrollIntoView({block:'nearest'});}
+for(const tr of $$('tr[data-item]'))tr.onclick=()=>detail(+tr.dataset.item);
+// Tabs: 3D model plus one tab per sheet; the sheets are the exact SVGs that become the PDF.
+let tab='3D';$('#tabs').innerHTML=['3D',...data.sheets.map((_,i)=>'Sheet '+(i+1))].map(t=>`<button data-tab="${t}">${t}</button>`).join('');
+data.sheets.forEach((svg,i)=>{const d=document.createElement('div');d.className='sheet';d.dataset.sheet=i+1;d.innerHTML=svg;$('#sheetwrap').append(d);});
+function show(t){tab=t;for(const b of $$('[data-tab]'))b.classList.toggle('on',b.dataset.tab===t);$('#view').style.display=t==='3D'?'block':'none';$('#sheets').style.display=t==='3D'?'none':'block';
+  for(const s of $$('.sheet'))s.style.display=t==='Sheet '+s.dataset.sheet?'block':'none';if(t!=='3D')fit();}
+for(const b of $$('[data-tab]'))b.onclick=()=>show(b.dataset.tab);
+// Sheet zoom / pan.
+let z={k:1,x:0,y:0};const wrap=$('#sheetwrap'),pane=$('#sheets');
+function apply(){wrap.style.transform=`translate(${z.x}px,${z.y}px) scale(${z.k})`;wrap.style.setProperty('--inv',1/z.k);}
+function fit(){const w=pane.clientWidth-40,h=pane.clientHeight-80;z.k=Math.min(w/1400,h/(1400*297/420));z.x=(pane.clientWidth-1400*z.k)/2;z.y=50;apply();}
+pane.addEventListener('wheel',e=>{e.preventDefault();const r=pane.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,s=Math.exp(-e.deltaY*.0015);z.x=mx-(mx-z.x)*s;z.y=my-(my-z.y)*s;z.k*=s;apply();},{passive:false});
+let drag=null;pane.addEventListener('pointerdown',e=>{if(!commenting&&!e.target.closest('.pin'))drag=[e.clientX-z.x,e.clientY-z.y,e.clientX,e.clientY];});
+addEventListener('pointermove',e=>{if(drag){z.x=e.clientX-drag[0];z.y=e.clientY-drag[1];apply();}});addEventListener('pointerup',()=>{drag=null;});pane.ondblclick=fit;
+// Comments: 3D pins track a point in item 1's part frame; sheet pins sit at a paper position on one sheet.
+let commenting=false,notes=[];const round=v=>Math.round(v*100)/100;
+function say(m){$('#copymsg').textContent=m;}
+$('#comment').onclick=()=>{commenting=!commenting;$('#comment').classList.toggle('on',commenting);document.body.classList.toggle('commenting',commenting);
+  say(commenting?'Click the part or a sheet to pin a note. Click Comment mode again to stop.':'Turn on Comment mode, then click the 3D part or a sheet to pin a note.');};
+$('#fold').onclick=()=>{$('#edits').classList.toggle('shut');$('#fold').textContent=$('#edits').classList.contains('shut')?'+':'–';};
+function renumber(){notes.forEach((n,i)=>{n.n=i+1;n.el.querySelector('b span').textContent=n.n;});}
+function reportNotes(){$('#notes').textContent=notes.length?notes.map(n=>`${n.n}. ${n.text||'(empty)'}  @ ${n.where}`).join('\n'):'none';}
+function addNote(where,parent,extra){
+  const note={where,text:'',n:notes.length+1,...extra};const el=document.createElement('div');el.className='pin';
+  el.innerHTML=`<b><span>${note.n}</span></b><div class="box"><textarea placeholder="What should change here?"></textarea><button class="del">Delete</button></div>`;
+  el.querySelector('b').onclick=e=>{e.stopPropagation();el.classList.toggle('shut');};el.onclick=e=>e.stopPropagation();el.onpointerdown=e=>e.stopPropagation();
+  el.querySelector('.del').onclick=()=>{notes.splice(notes.indexOf(note),1);el.remove();renumber();reportNotes();};
+  const area=el.querySelector('textarea');area.oninput=()=>{note.text=area.value;reportNotes();};
+  note.el=el;parent.append(el);notes.push(note);reportNotes();area.focus();return note;}
+for(const s of $$('.sheet'))s.addEventListener('click',e=>{if(!commenting)return;
+  const r=s.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width,fy=(e.clientY-r.top)/r.height;
+  const near=nearest(s,e.clientX,e.clientY);
+  const note=addNote(`sheet ${s.dataset.sheet}${near?', '+near:''}, paper (${round(fx*420)}, ${round((1-fy)*297)}) mm`,s,{});note.el.style.left=fx*100+'%';note.el.style.top=fy*100+'%';note.el.classList.toggle('flip',fx>.8);});
+// What a sheet pin points at: the nearest sheet text within 15 paper mm, and the view whose name sits below-left of the click.
+function nearest(s,x,y){const mm=s.getBoundingClientRect().width/420,isView=t=>/ VIEW$|^ISOMETRIC/.test(t);
+  const t=[...s.querySelectorAll('svg text')].map(el=>({s:el.textContent.trim(),r:el.getBoundingClientRect()})).filter(o=>o.s);
+  const d=o=>Math.hypot(Math.max(o.r.left-x,0,x-o.r.right),Math.max(o.r.top-y,0,y-o.r.bottom)),by=(a,b)=>d(a)-d(b);
+  const ref=t.filter(o=>!isView(o.s)).sort(by)[0],view=t.filter(o=>isView(o.s)&&o.r.left<=x&&o.r.top>=y).sort(by)[0];
+  return [ref&&d(ref)<15*mm?`near “${ref.s}”`:'',view?view.s.split(' ')[0].toLowerCase()+' view':''].filter(Boolean).join(' · ');}
+// Sandboxed previews may block the clipboard: fall back to selecting the text for Ctrl+C.
+$('#copy').onclick=()=>{const text=`Comments on ${data.title} (STEP sha ${data.source.sha256.slice(0,12)}):\n${$('#notes').textContent}`;
+  const select=()=>{const r=document.createRange();r.selectNodeContents($('#notes'));const s=getSelection();s.removeAllRanges();s.addRange(r);say('Clipboard blocked here — text selected, press Ctrl+C.');};
+  if(!navigator.clipboard)return select();navigator.clipboard.writeText(text).then(()=>say('Copied.'),select);};
+detail(selected);show(data.sheets.length?"Sheet 1":"3D");
+try {
+const THREE=await import('three');const {OrbitControls}=await import('three/addons/controls/OrbitControls.js');
+const view=$('#view'),W=()=>view.clientWidth,H=()=>view.clientHeight;
+const scene=new THREE.Scene();scene.background=new THREE.Color('#f4f6f8');
+const camera=new THREE.OrthographicCamera(-1,1,1,-1,-1e5,1e5);camera.up.set(0,0,1);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W(),H());view.prepend(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x8090a0,2.2));const light=new THREE.DirectionalLight(0xffffff,1.6);light.position.set(-1,-2,4);scene.add(light);
+const tint={sheet:0xdfe6ec,'weld (probable)':0xf0b070,'fastener (probable)':0x9aa3ad};const part=[];
+for(const m of data.meshes){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(m.positions,3));g.setIndex(m.indices);g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:tint[m.role]??0xc9a8e0,roughness:.85,side:THREE.DoubleSide,transparent:true,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1}));
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(g,28),new THREE.LineBasicMaterial({color:0x1b2b36,transparent:true}));
+  mesh.add(edges);mesh.userData={item:m.item,edges};scene.add(mesh);part.push(mesh);}
+const bounds=new THREE.Box3();for(const m of part)bounds.expandByObject(m);const center=bounds.getCenter(new THREE.Vector3()),span=bounds.getSize(new THREE.Vector3()).length();
+function frustum(){const a=W()/H(),h=span*.62;camera.left=-h*a;camera.right=h*a;camera.top=h;camera.bottom=-h;camera.updateProjectionMatrix();}frustum();
+function preset(name){const dirs={iso:[1,-1,1],front:[0,-1,0],right:[1,0,0],top:[0,0,1]};camera.up.set(0,name==='top'?1:0,name==='top'?0:1);camera.position.copy(center).add(new THREE.Vector3(...dirs[name]).normalize().multiplyScalar(span*2));camera.zoom=1;camera.updateProjectionMatrix();controls.target.copy(center);controls.update();dirty=true;}
+for(const b of $$('[data-view]'))b.onclick=()=>preset(b.dataset.view);
+const showing={dims:true,hole:false,flange:false,bend:false};
+for(const c of $$('[data-show]'))c.onchange=()=>{showing[c.dataset.show]=c.checked;build();};
+// Annotation layer for the selected item: 3D dimension lines + 2D leader callouts, like the sheet.
+const dimGroup=new THREE.Group();scene.add(dimGroup);let dims=[],marks=[];
+const V=a=>new THREE.Vector3(...a);
+function build(){
+  for(const m of part){const on=m.userData.item===selected;m.material.opacity=on?1:.22;m.userData.edges.material.opacity=on?1:.15;m.material.depthWrite=on;}
+  dimGroup.clear();$('#labels').innerHTML='';dims=[];marks=[];
+  const a=data.annotations[String(selected)];if(!a){dirty=true;return;}
+  const o=V(a.origin),ax=a.axes.map(V),[L,Wd,Hh]=a.size,off=span*.05,mat=new THREE.LineBasicMaterial({color:0x152a38});
+  const P=(x,y,z)=>o.clone().addScaledVector(ax[0],x).addScaledVector(ax[1],y).addScaledVector(ax[2],z);
+  // [start, end, direction of offset]: X along the front edge, Y along the right edge, Z up the front-left edge.
+  const spec=[[P(0,0,0),P(L,0,0),ax[1].clone().negate(),L],[P(L,0,0),P(L,Wd,0),ax[0].clone(),Wd],[P(0,0,0),P(0,0,Hh),ax[0].clone().negate(),Hh]];
+  if(showing.dims)for(const [s,e,d,val] of spec){
+    const s2=s.clone().addScaledVector(d,off),e2=e.clone().addScaledVector(d,off),pts=[s,s2.clone().addScaledVector(d,off*.25),e,e2.clone().addScaledVector(d,off*.25),s2,e2];
+    dimGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),mat));
+    const u=e2.clone().sub(s2).normalize(),n=d.clone().cross(u).normalize(),h=off*.35;
+    for(const [tip,dir] of [[s2,u],[e2,u.clone().negate()]]){const g=new THREE.BufferGeometry().setFromPoints([tip,tip.clone().addScaledVector(dir,h).addScaledVector(d,h*.3),tip.clone().addScaledVector(dir,h).addScaledVector(d,-h*.3)]);
+      g.setIndex([0,1,2]);dimGroup.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x152a38,side:THREE.DoubleSide})));}
+    const el=document.createElement('div');el.className='dimlab';el.textContent=f(val);$('#labels').append(el);dims.push({el,a:s2,b:e2});}
+  for(const m of a.marks){if(!showing[m.kind])continue;const el=document.createElement('div');el.className='lab '+m.kind;el.textContent=m.text;el.dataset.id=m.id;
+    el.onmouseenter=e=>{const t=$('#tip');t.textContent=m.at;t.style.display='block';};el.onmousemove=e=>{const r=$('#main').getBoundingClientRect(),t=$('#tip');t.style.left=e.clientX-r.left+12+'px';t.style.top=e.clientY-r.top+14+'px';};
+    el.onmouseleave=()=>{$('#tip').style.display='none';};el.onclick=()=>hot(m.id);if(m.id===hotId)el.classList.add('hot');
+    $('#labels').append(el);marks.push({...m,el,p:V(m.p)});}
+  dirty=true;
+}
+onSelect=build;
+const ray=new THREE.Raycaster();
+function project(p){const v=p.clone().project(camera);return [(v.x*.5+.5)*W(),(-v.y*.5+.5)*H()];}
+function occluded(p){const v=p.clone().project(camera);ray.setFromCamera(new THREE.Vector2(v.x,v.y),camera);const dist=ray.ray.origin.distanceTo(p);const hit=ray.intersectObjects(part.filter(m=>m.userData.item===selected),false)[0];return hit&&hit.distance<dist-Math.max(3*(data.items.find(r=>r.item===selected).thickness_mm||1),span*.004);}
+// Callouts sit outside the part silhouette, pushed radially from the item centre, then spread so no two overlap.
+function layout(){
+  const svg=$('#overlay');let lines='';
+  for(const d of dims){const [ax_,ay]=project(d.a),[bx,by]=project(d.b),len=Math.hypot(bx-ax_,by-ay);d.el.style.display=len<25?'none':'block';d.el.style.left=(ax_+bx)/2+'px';d.el.style.top=(ay+by)/2+'px';}
+  if(!marks.length){svg.innerHTML='';return;}
+  const pts=marks.map(m=>project(m.p)),cx=pts.reduce((s,p)=>s+p[0],0)/pts.length,cy=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+  const boxes=marks.map((m,i)=>{const [x,y]=pts[i];let dx=x-cx,dy=y-cy;const n=Math.hypot(dx,dy)||1;dx/=n;dy/=n;const w=m.el.offsetWidth,h=m.el.offsetHeight;
+    return {i,x:x+dx*70-(dx<0?w:0),y:y+dy*55-h/2,w,h};});
+  const fixed=dims.filter(d=>d.el.style.display!=='none').map(d=>{const w=d.el.offsetWidth,h=d.el.offsetHeight;return {fixed:true,x:parseFloat(d.el.style.left)-w/2,y:parseFloat(d.el.style.top)-h/2,w,h};});
+  const all=[...boxes,...fixed];
+  for(let it=0;it<80;it++){let moved=false;for(const a of boxes)for(const b of all){if(a===b)continue;
+    const ox=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x)+4,oy=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y)+3;
+    if(ox>0&&oy>0){moved=true;const k=b.fixed?1:.5;if(oy<ox){const s=a.y<b.y?-1:1;a.y+=s*oy*k;if(!b.fixed)b.y-=s*oy*k;}else{const s=a.x<b.x?-1:1;a.x+=s*ox*k;if(!b.fixed)b.x-=s*ox*k;}}}if(!moved)break;}
+  for(const b of boxes){const m=marks[b.i],[x,y]=pts[b.i],hid=!!occluded(m.p);m.el.style.left=b.x+'px';m.el.style.top=b.y+'px';m.el.classList.toggle('hidden',hid);
+    const ex=Math.max(b.x,Math.min(x,b.x+b.w)),ey=Math.max(b.y,Math.min(y,b.y+b.h)),col=getComputedStyle(m.el).borderColor;
+    lines+=`<line x1="${x}" y1="${y}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="1.3" ${hid?'stroke-dasharray="4 3" opacity=".5"':''}/><circle cx="${x}" cy="${y}" r="2.6" fill="${col}"/>`;}
+  svg.innerHTML=lines;
+}
+let dirty=true;controls.addEventListener('change',()=>{dirty=true;});
+const down=[];renderer.domElement.addEventListener('pointerdown',e=>{down[0]=e.clientX;down[1]=e.clientY;});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;
+  const r=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
+  const hit=ray.intersectObjects(part,false)[0];if(!hit)return;
+  if(commenting){const item=hit.object.userData.item,m=(data.annotations[String(item)]?.marks||[]).map(m=>[V(m.p).distanceTo(hit.point),m]).sort((a,b)=>a[0]-b[0])[0];
+    const near=m&&m[0]<15?`, near ${m[1].text.replace(/\s+/g,' ')}`:'';
+    const note=addNote(`3D [${hit.point.toArray().map(round).join(', ')}] on item ${item}${near}`,$('#labels').parentElement,{p:hit.point.clone()});pinned.push(note);dirty=true;}
+  else if(hit.object.userData.item!==selected)detail(hit.object.userData.item);});
+const pinned=[];
+addEventListener('resize',()=>{renderer.setSize(W(),H());frustum();dirty=true;});
+$('#failure').style.display='none';build();preset('iso');
+(function animate(){requestAnimationFrame(animate);if(tab!=='3D')return;controls.update();renderer.render(scene,camera);
+  if(dirty){dirty=false;layout();}
+  for(const n of pinned)if(notes.includes(n)){const [x,y]=project(n.p);n.el.style.left=x+'px';n.el.style.top=y+'px';n.el.classList.toggle('flip',x>W()-240);}})();
+}catch(error){$('#failure').textContent=`3D view unavailable: ${error.message.replace(/\.$/,"")}. The sheet tabs are still complete.`;}
+</script></body></html>

@@ -1,0 +1,489 @@
+{
+  "schema_version": "1.2",
+  "project_id": "CHECK-PRINTED_SOLID",
+  "revision": "R1",
+  "units": "mm",
+  "thickness_mm": 5.0,
+  "min_width_mm": 10.0,
+  "plates": [],
+  "joints": [],
+  "assembly_layers": [],
+  "contacts": [
+    {
+      "name": "A1",
+      "contact": [
+        -50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -50.0,
+          -30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "A2",
+      "contact": [
+        50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          50.0,
+          -30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "A3",
+      "contact": [
+        0.0,
+        30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          0.0,
+          30.0,
+          60.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -0.0,
+          -1.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "B1",
+      "contact": [
+        -40.0,
+        -50.0,
+        63.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -40.0,
+          -50.0,
+          63.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -1.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "B2",
+      "contact": [
+        40.0,
+        -50.0,
+        63.0
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          40.0,
+          -50.0,
+          63.0
+        ],
+        "outward_normal": [
+          -0.0,
+          -1.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "C1",
+      "contact": [
+        -80.0,
+        0.0,
+        63.0
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Plate",
+      "rib": "BODY_MAIN",
+      "role": "Tertiary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -80.0,
+          0.0,
+          63.0
+        ],
+        "outward_normal": [
+          -1.0,
+          -0.0,
+          -0.0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    }
+  ],
+  "locating_groups": {
+    "plate": [
+      "A1",
+      "A2",
+      "A3",
+      "B1",
+      "B2",
+      "C1"
+    ]
+  },
+  "clamps": [],
+  "workpiece": {
+    "placed_step": "workpiece.step",
+    "source_files": [
+      "workpiece.step"
+    ],
+    "parts": {
+      "Plate": "Part_Plate"
+    },
+    "source_to_fixture": [
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ]
+    ]
+  },
+  "supports": [
+    {
+      "id": "A1",
+      "plate": "R1",
+      "part": "Plate",
+      "contact": [
+        -50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "A2",
+      "plate": "R1",
+      "part": "Plate",
+      "contact": [
+        50.0,
+        -30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "A3",
+      "plate": "R2",
+      "part": "Plate",
+      "contact": [
+        0.0,
+        30.0,
+        60.0
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "retention": [],
+  "assumptions": [
+    "Synthetic planar checking coupon for end-to-end software testing; not a fabrication-approved fixture."
+  ],
+  "assembly_locating": {
+    "master_part": "Plate",
+    "datum_rationale": "Single flat workpiece on three non-collinear supports.",
+    "mating_contacts": [],
+    "loading_stages": [
+      {
+        "id": "load-plate",
+        "parts": [
+          "Plate"
+        ],
+        "fixture_contacts": [
+          "A1",
+          "A2",
+          "A3",
+          "B1",
+          "B2",
+          "C1"
+        ],
+        "mating_contacts": [],
+        "seating_directions": {
+          "Plate": {
+            "Primary": [
+              0,
+              0,
+              -1
+            ],
+            "Secondary": [
+              0,
+              -1,
+              0
+            ],
+            "Tertiary": [
+              -1,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "inspection": {
+    "units": "mm",
+    "construction": "printed_solid",
+    "datum_scheme": "Coupon A bottom, B side, C end; proposed demonstration datums",
+    "flanges": [
+      {
+        "id": "F01",
+        "source_feature": "Part_Plate bottom planar coupon surface z=60, outward -Z",
+        "checks": [
+          {
+            "id": "F01-S1",
+            "kind": "surface_gap",
+            "part": "Plate",
+            "fixture_shape": "BODY_MAIN",
+            "point_mm": [
+              0,
+              0,
+              60
+            ],
+            "direction": [
+              0,
+              0,
+              -1
+            ],
+            "scope": "Local planar position only; synthetic checking coupon",
+            "approach": "From positive X beneath coupon; full handle and hand clearance require review",
+            "drawing_conflict": false,
+            "patch": {
+              "u": [
+                1,
+                0,
+                0
+              ],
+              "v": [
+                0,
+                1,
+                0
+              ],
+              "width_mm": 10,
+              "height_mm": 10
+            },
+            "gauge_envelope": {
+              "u": [
+                1,
+                0,
+                0
+              ],
+              "width_mm": 10,
+              "length_mm": 4
+            },
+            "basis": "shop_standard"
+          }
+        ]
+      }
+    ]
+  },
+  "printed_bodies": [
+    {
+      "name": "BODY_MAIN",
+      "stock": {
+        "origin": [
+          -100,
+          -70,
+          0
+        ],
+        "size": [
+          200,
+          140,
+          57
+        ]
+      },
+      "add": [
+        {
+          "type": "box",
+          "origin": [
+            -55,
+            -35,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            3
+          ]
+        },
+        {
+          "type": "box",
+          "origin": [
+            45,
+            -35,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            3
+          ]
+        },
+        {
+          "type": "box",
+          "origin": [
+            -5,
+            25,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            3
+          ]
+        },
+        {
+          "type": "box",
+          "origin": [
+            -45,
+            -60,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            8
+          ]
+        },
+        {
+          "type": "box",
+          "origin": [
+            35,
+            -60,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            8
+          ]
+        },
+        {
+          "type": "box",
+          "origin": [
+            -90,
+            -5,
+            57
+          ],
+          "size": [
+            10,
+            10,
+            8
+          ]
+        }
+      ]
+    }
+  ],
+  "print_settings": {
+    "linear_deflection_mm": 0.05,
+    "material": "unspecified; concept only",
+    "process": "unspecified; concept only"
+  }
+}

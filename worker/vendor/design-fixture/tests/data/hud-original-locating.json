@@ -1,0 +1,485 @@
+{
+  "source_project": "WAG-B07-0007194",
+  "source_sha256": "2f4ffae12d969eb64ce74834aa6af2f49338243b3a6286811387a659663bf50a",
+  "workpiece": {
+    "parts": {
+      "Main": "Part_Main",
+      "Reinforcement": "Part_Reinforcement"
+    }
+  },
+  "contacts": [
+    {
+      "name": "MA1",
+      "contact": [
+        65,
+        -110,
+        63
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Main",
+      "rib": "R1",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          65,
+          -110,
+          63
+        ],
+        "outward_normal": [
+          0,
+          0,
+          -1
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "MA2",
+      "contact": [
+        65,
+        147,
+        63
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Main",
+      "rib": "R2",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          65,
+          147,
+          63
+        ],
+        "outward_normal": [
+          0,
+          0,
+          -1
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "MA3",
+      "contact": [
+        0,
+        -135,
+        63
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Main",
+      "rib": "R3",
+      "role": "Primary",
+      "face": {
+        "type": "plane",
+        "point": [
+          0,
+          -135,
+          63
+        ],
+        "outward_normal": [
+          0,
+          0,
+          -1
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RA1",
+      "contact": [
+        -47,
+        -110,
+        60
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Reinforcement",
+      "rib": "R1",
+      "role": "Primary",
+      "source_face_note": "Trimmed B-spline face, nominally flat; separate exact CAD gap and normal check required.",
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RA2",
+      "contact": [
+        -25,
+        -110,
+        60
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Reinforcement",
+      "rib": "R1",
+      "role": "Primary",
+      "source_face_note": "Trimmed B-spline face, nominally flat; separate exact CAD gap and normal check required.",
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RA3",
+      "contact": [
+        -55,
+        147,
+        60
+      ],
+      "normal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "part": "Reinforcement",
+      "rib": "R2",
+      "role": "Primary",
+      "source_face_note": "Trimmed B-spline face, nominally flat; separate exact CAD gap and normal check required.",
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "MB1",
+      "contact": [
+        104.37368492826,
+        -67.5,
+        64.5
+      ],
+      "normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Main",
+      "rib": "MB1",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          104.37368492826,
+          -67.5,
+          64.5
+        ],
+        "outward_normal": [
+          1,
+          0,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "MB2",
+      "contact": [
+        104.37368492826,
+        177.3168,
+        64.5
+      ],
+      "normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Main",
+      "rib": "MB2",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          104.37368492826,
+          177.3168,
+          64.5
+        ],
+        "outward_normal": [
+          1,
+          0,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "MC1",
+      "contact": [
+        -30,
+        -202.330454900693,
+        74.5
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Main",
+      "rib": "MC1",
+      "role": "Tertiary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -30,
+          -202.330454900693,
+          74.5
+        ],
+        "outward_normal": [
+          0,
+          -1,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RB1",
+      "contact": [
+        -61.67018652483,
+        -55,
+        61.5
+      ],
+      "normal": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Reinforcement",
+      "rib": "RB1",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -61.67018652483,
+          -55,
+          61.5
+        ],
+        "outward_normal": [
+          -1,
+          0,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RB2",
+      "contact": [
+        -34.55390789665,
+        147,
+        61.5
+      ],
+      "normal": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "part": "Reinforcement",
+      "rib": "R2",
+      "role": "Secondary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -34.55390789665,
+          147,
+          61.5
+        ],
+        "outward_normal": [
+          1,
+          0,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    },
+    {
+      "name": "RC1",
+      "contact": [
+        -38,
+        -126.491864605878,
+        61.5
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "part": "Reinforcement",
+      "rib": "RC1",
+      "role": "Tertiary",
+      "face": {
+        "type": "plane",
+        "point": [
+          -38,
+          -126.491864605878,
+          61.5
+        ],
+        "outward_normal": [
+          0,
+          -1,
+          0
+        ]
+      },
+      "constraint_role": "fixed_datum"
+    }
+  ],
+  "assembly_locating": {
+    "master_part": "Reinforcement",
+    "datum_rationale": "Historical HUD fixture contacts retained for regression only; not a recommended design.",
+    "mating_contacts": [
+      {
+        "name": "Overlap4",
+        "part_a": "Main",
+        "part_b": "Reinforcement",
+        "contact": [
+          -47,
+          -110,
+          63
+        ],
+        "normal_on_a": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "name": "Overlap5",
+        "part_a": "Main",
+        "part_b": "Reinforcement",
+        "contact": [
+          -25,
+          -110,
+          63
+        ],
+        "normal_on_a": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "name": "Overlap6",
+        "part_a": "Main",
+        "part_b": "Reinforcement",
+        "contact": [
+          -55,
+          147,
+          63
+        ],
+        "normal_on_a": [
+          0,
+          0,
+          1
+        ]
+      }
+    ],
+    "loading_stages": [
+      {
+        "id": "lower",
+        "parts": [
+          "Reinforcement"
+        ],
+        "fixture_contacts": [
+          "RA1",
+          "RA2",
+          "RA3",
+          "RB1",
+          "RB2",
+          "RC1"
+        ],
+        "mating_contacts": [],
+        "seating_directions": {
+          "Reinforcement": {
+            "Primary": [
+              0,
+              0,
+              -1
+            ],
+            "Secondary": [
+              -1,
+              0,
+              0
+            ],
+            "Tertiary": [
+              0,
+              -1,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "id": "both",
+        "parts": [
+          "Main",
+          "Reinforcement"
+        ],
+        "fixture_contacts": [
+          "MA1",
+          "MA2",
+          "MA3",
+          "RA1",
+          "RA2",
+          "RA3",
+          "MB1",
+          "MB2",
+          "MC1",
+          "RB1",
+          "RB2",
+          "RC1"
+        ],
+        "mating_contacts": [
+          "Overlap4",
+          "Overlap5",
+          "Overlap6"
+        ],
+        "seating_directions": {
+          "Reinforcement": {
+            "Primary": [
+              0,
+              0,
+              -1
+            ],
+            "Secondary": [
+              -1,
+              0,
+              0
+            ],
+            "Tertiary": [
+              0,
+              -1,
+              0
+            ]
+          },
+          "Main": {
+            "Primary": [
+              0,
+              0,
+              -1
+            ],
+            "Secondary": [
+              1,
+              0,
+              0
+            ],
+            "Tertiary": [
+              0,
+              -1,
+              0
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

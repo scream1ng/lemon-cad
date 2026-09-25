@@ -1,0 +1,210 @@
+import {useEffect, useRef, useImperativeHandle, forwardRef} from 'react';
+import * as THREE from 'three';
+import {TrackballControls} from 'three/addons/controls/TrackballControls.js';
+import {cylinderRims, pickCadFace, type Rim} from './picking';
+import {dimensionClick,offsetDimension,type Point2,type Placement} from './dimensionPlacement';
+import {pickEdge,type CadEdge} from './edgePicking';
+import {STLLoader} from 'three/addons/loaders/STLLoader.js';
+import {PDFDocument, StandardFonts, rgb} from 'pdf-lib';
+import type {MeasureFeature} from './quickMeasure';
+import {fileURL, dimensionValue, type Model, type Dimension} from './api';
+
+export type ViewerHandle = {focus: () => void; fit: (view?: string) => void; camera: () => any; export: (format: 'png'|'pdf') => Promise<void>};
+type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
+function download(blob: Blob, name: string) {const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);}
+
+export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref) {
+  const host = useRef<HTMLDivElement>(null), current = useRef(props), runtime = useRef<any>(null);
+  current.current = props;
+  useImperativeHandle(ref, () => ({
+    focus() {host.current?.focus();},
+    fit(view) {runtime.current?.fit(view);},
+    camera() {const r = runtime.current; return r ? {position:r.camera.position.toArray(), target:r.controls.target.toArray(), zoom:r.camera.zoom,up:r.camera.up.toArray()} : null;},
+    async export(format) {
+      const r = runtime.current;
+      if (!r?.ready) throw new Error('Wait for the model to finish loading.');
+      if(current.current.preview)throw new Error('Place or cancel the dimension before exporting.');
+      r.render();
+      const p = current.current, canvas = document.createElement('canvas');
+      canvas.width = 1600; canvas.height = 1100 + p.dimensions.length * 45;
+      const c = canvas.getContext('2d')!;
+      c.fillStyle = '#FFFEFA'; c.fillRect(0,0,canvas.width,canvas.height);
+      c.fillStyle = '#29352B'; c.font = 'bold 28px sans-serif'; c.fillText('LemonCAD / ' + p.model.name.slice(0,70),40,50);
+      const scale = Math.min(1520 / r.renderer.domElement.width, 910 / r.renderer.domElement.height);
+      const w = r.renderer.domElement.width * scale, h = r.renderer.domElement.height * scale;
+      c.drawImage(r.renderer.domElement, (1600-w)/2,85,w,h);
+      c.drawImage(r.overlay, (1600-w)/2,85,w,h);
+      c.font = '18px sans-serif';
+      c.fillText(p.model.format === 'stl' ? `Mesh measurements · source units ${p.stlUnit} · approximate` : 'STEP geometry measurements · displayed to two decimal places · verify suitability before manufacture',40,1030);
+      p.dimensions.forEach((d,i) => c.fillText(`${i+1}. ${d.label}   ${dimensionValue(d,p.unit)}   ${d.method || d.basis}`,40,1080+i*45));
+      if (format === 'png') {canvas.toBlob(blob => blob && download(blob, p.model.name + '.png')); return;}
+      const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
+      const img = await pdf.embedPng(canvas.toDataURL('image/png'));
+      const page = pdf.addPage([1191,842]);
+      const s = Math.min(1131/img.width,752/img.height);
+      page.drawImage(img,{x:(1191-img.width*s)/2,y:50,width:img.width*s,height:img.height*s});
+      page.drawText('LemonCAD | Annotated model view | Not a tolerance-controlled drawing',{x:30,y:22,size:9,font,color:rgb(.16,.21,.17)});
+      download(new Blob([new Uint8Array(await pdf.save())],{type:'application/pdf'}),p.model.name+'.pdf');
+    }
+  }),[]);
+  useEffect(() => {runtime.current?.render();},[props.dimensions,props.preview,props.selected,props.unit,props.wire,props.labels,props.measuring]);
+  useEffect(()=>{if(props.measuring)host.current?.focus();},[props.measuring]);
+  useEffect(() => {
+    const container = host.current!;
+    const scene = new THREE.Scene(); scene.background = new THREE.Color('#F3F5EE');
+    const renderer = new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const camera = new THREE.OrthographicCamera(-100,100,100,-100,0.01,100000);
+    camera.up.set(0,0,1); camera.position.set(300,-300,240);
+    const controls = new TrackballControls(camera,renderer.domElement); controls.staticMoving=true; controls.rotateSpeed=3; controls.zoomSpeed=1.2; controls.panSpeed=0.5; controls.keys=['','',''];
+    const overlay = document.createElement('canvas'); overlay.className='dimension-overlay';
+    container.append(renderer.domElement,overlay);
+    scene.add(new THREE.HemisphereLight(0xffffff,0x77816d,2.5)); scene.add(new THREE.AmbientLight(0xffffff,0.7));
+    const light = new THREE.DirectionalLight(0xffffff,3); light.position.set(100,50,200); scene.add(light);
+    let mesh: THREE.Mesh | undefined, edge: THREE.LineSegments | undefined, ids: number[] = [], geometry: THREE.BufferGeometry | undefined;
+    let faceMetadata:any[]=[],rims:Rim[]=[],cadEdges:CadEdge[]=[];
+    let viewHeight=1;let pointer:Point2|null=null;
+    function project(p:number[]){const v=new THREE.Vector3(...p).project(camera);return [(v.x+1)*overlay.width/2,(1-v.y)*viewHeight*renderer.getPixelRatio()/2];}
+    let extent=100, center=new THREE.Vector3(), stopped=false, frame=0;
+    const abort = new AbortController();
+    let viewQuaternion:THREE.Quaternion|null=null;
+    function fit(view='iso') {
+      if (!mesh) return;
+      const dir = view === 'front' ? new THREE.Vector3(0,-1,0) : view === 'top' ? new THREE.Vector3(0,0,1) : view === 'right' ? new THREE.Vector3(1,0,0) : new THREE.Vector3(1,-1,0.8).normalize();
+      camera.up.set(0,view==='top'?1:0,view==='top'?0:1);
+      camera.position.copy(center).addScaledVector(dir,extent*3); camera.zoom=1; controls.target.copy(center); resize(); controls.update();viewQuaternion=camera.quaternion.clone();current.current.onViewChange(view);
+    }
+    function resize() {
+      const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight);
+      renderer.setSize(w,h); overlay.width=renderer.domElement.width; overlay.height=renderer.domElement.height;
+      viewHeight=h;
+      const aspect=w/viewHeight; camera.left=-extent*.6*aspect;camera.right=extent*.6*aspect;camera.top=extent*.6;camera.bottom=-extent*.6;
+      camera.near=Math.max(extent/10000,0.001);camera.far=extent*1000;camera.updateProjectionMatrix(); controls.handleResize(); render();
+    }
+    const observer = new ResizeObserver(resize); observer.observe(container);
+    const ray = new THREE.Raycaster(); let down=[0,0];
+    let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null;
+    function placement(position:number[]):Placement{return {position,matrix:new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).toArray(),viewport:[container.clientWidth,container.clientHeight]};}
+    function pointerDown(e: PointerEvent) {down=[e.clientX,e.clientY];controls.handleResize();
+      const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+      dragLabel=(!current.current.preview&&!current.current.pending?labelBoxes:[]).find(b=>x>=b.x&&x<=b.x+b.width&&y>=b.y-20&&y<=b.y+8)?.id||null;
+      if(dragLabel){e.stopImmediatePropagation();controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);}
+    }
+    function hitAt(e:PointerEvent){
+      if(!mesh)return;
+      const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;if(y<0)return;
+      ray.setFromCamera(new THREE.Vector2(x/rect.width*2-1,-y/viewHeight*2+1),camera);
+      return pickEdge(ray,mesh,cadEdges,camera,rect.width,viewHeight,x,y)||pickCadFace(ray,mesh,ids,rims,camera,rect.width,viewHeight,x,y);
+    }
+    function pointerUp(e: PointerEvent) {
+      if(dragLabel){dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
+      controls.update();
+      if(e.button!==0||!mesh||!current.current.measuring)return;
+      const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
+      const hit=hitAt(e),action=dimensionClick(!!hit,current.current.selected.length,!!current.current.preview||current.current.pending,Math.hypot(e.clientX-down[0],e.clientY-down[1])>5);
+      if(action==='place')current.current.onPlace(placement(pointer));
+      else if(action==='select'&&hit)current.current.onPick(hit.id,hit.point);
+    }
+    function keyDown(e:KeyboardEvent){
+      if(!current.current.measuring)return;
+      if(!faceMetadata.length)return;
+      if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+        e.preventDefault();const index=faceMetadata.findIndex(f=>f.id===hovered),step=e.key==='ArrowRight'?1:-1;
+        hovered=faceMetadata[(index+step+faceMetadata.length)%faceMetadata.length].id;render();
+      }else if(e.key==='Enter'&&current.current.preview&&pointer){e.preventDefault();current.current.onPlace(placement(pointer));
+      }else if(e.key==='Enter'&&hovered&&!current.current.preview){e.preventDefault();const f=faceMetadata.find(f=>f.id===hovered);current.current.onPick(hovered,f.centroid);}
+    }
+    container.addEventListener('keydown',keyDown);
+    renderer.domElement.addEventListener('pointerdown',pointerDown,true);renderer.domElement.addEventListener('pointerup',pointerUp);
+    let previousSelection='', hovered=0;
+    function pointerMove(e:PointerEvent){
+      const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
+      if(dragLabel){const rect=container.getBoundingClientRect();current.current.onLabelMove(dragLabel,placement([(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height]));return;}
+      controls.update();
+      if(!mesh||!current.current.measuring){hovered=0;return;}
+      const hit=hitAt(e);hovered=hit?.id||0;container.style.cursor=hit||current.current.preview||current.current.pending?'crosshair':'grab';render();
+    }
+    renderer.domElement.addEventListener('pointermove',pointerMove);renderer.domElement.addEventListener('pointerleave',()=>{hovered=0;render();});
+    function render() {
+      if(!current.current.measuring)hovered=0;
+      if (mesh) {
+        const selected=current.current.selected.join(',')+':'+hovered;
+        if (selected!==previousSelection && geometry) {
+          const colors=geometry.getAttribute('color');
+          for(let t=0;t<ids.length;t++) {const color=new THREE.Color(current.current.selected.includes(ids[t])?'#F3DF38':hovered===ids[t]?'#D9DB89':'#687F91');for(let k=0;k<3;k++) colors.setXYZ(t*3+k,color.r,color.g,color.b);}
+          colors.needsUpdate=true;previousSelection=selected;
+        }
+        (mesh.material as THREE.MeshStandardMaterial).wireframe=current.current.wire;
+        if(edge) edge.visible=!current.current.wire;
+      }
+      renderer.render(scene,camera);
+      const c=overlay.getContext('2d')!;c.clearRect(0,0,overlay.width,overlay.height);
+      if(hovered&&current.current.measuring){
+        c.strokeStyle='#9A8A16';c.lineWidth=3*renderer.getPixelRatio();c.beginPath();
+        for(const rim of rims.filter(r=>r.faceId===hovered)){
+          const a=rim.a.clone().project(camera),b=rim.b.clone().project(camera);
+          if(a.z < -1||a.z > 1||b.z < -1||b.z > 1)continue;
+          c.moveTo(...project(rim.a.toArray()) as [number,number]);c.lineTo(...project(rim.b.toArray()) as [number,number]);
+        }c.stroke();
+      }
+      const ratio=renderer.getPixelRatio();labelBoxes=[];
+      for(const e of cadEdges.filter(e=>hovered===-e.id||current.current.selected.includes(-e.id))){
+        c.strokeStyle='#A68E05';c.lineWidth=3*ratio;c.beginPath();e.points.forEach((p,i)=>{const v=project(p);if(i)c.lineTo(v[0],v[1]);else c.moveTo(v[0],v[1]);});c.stroke();
+      }
+      if(current.current.labels) [...current.current.dimensions,...(current.current.preview?[current.current.preview]:[])].forEach((d,i)=>{
+        const [a,b]=[d.p1,d.p2].map(project);
+        const pending=d===current.current.preview;
+        const placement=pending&&pointer?pointer:d.labelPosition;
+        const label=dimensionValue(d,current.current.unit);c.font=`600 ${12*ratio}px monospace`;
+        const width=c.measureText(label).width+16*ratio;
+        const labelCenter:Point2=!pending&&d.annotation?project(d.annotation.label) as Point2:[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,placement?placement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,placement?placement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
+        const x=labelCenter[0]-width/2,y=labelCenter[1];
+        if(!pending)labelBoxes.push({id:d.id,x:x/ratio,y:y/ratio,width:width/ratio});
+        c.lineWidth=1.2*ratio;c.strokeStyle=pending?'#A68E05':'#52633D';
+        function line(p:number[],q:number[]){c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);}
+        function arrow(p:number[],q:number[]){const angle=Math.atan2(q[1]-p[1],q[0]-p[0]);for(const sign of [-1,1])line(p,[p[0]+8*ratio*Math.cos(angle+sign*.35),p[1]+8*ratio*Math.sin(angle+sign*.35)]);}
+        c.beginPath();
+        if(d.type==='dia'||d.type==='rad'||d.type==='angle'){
+          line(a,b);arrow(a,b);arrow(b,a);line([(a[0]+b[0])/2,(a[1]+b[1])/2],labelCenter);
+        }else{
+          const offset=!pending&&d.annotation?{a:project(d.p1.map((v,i)=>v+d.annotation!.offset[i])) as Point2,b:project(d.p2.map((v,i)=>v+d.annotation!.offset[i])) as Point2}:offsetDimension(a as Point2,b as Point2,labelCenter);
+          line(a,offset.a);line(b,offset.b);line(offset.a,offset.b);arrow(offset.a,offset.b);arrow(offset.b,offset.a);
+          line(offset.a,labelCenter);line(offset.b,labelCenter);
+        }
+        c.stroke();
+        for(const p of [a,b]){c.beginPath();line([p[0]-3*ratio,p[1]],[p[0]+3*ratio,p[1]]);line([p[0],p[1]-3*ratio],[p[0],p[1]+3*ratio]);c.stroke();}
+        c.fillStyle=pending?'#FFF9CB':'#F3F5EE';c.fillRect(x,y-17*ratio,width,24*ratio);c.fillStyle='#29352B';c.fillText(label,x+8*ratio,y);
+
+      });
+    }
+    controls.addEventListener('change',()=>{if(viewQuaternion&&1-Math.abs(camera.quaternion.dot(viewQuaternion))>1e-8){viewQuaternion=null;current.current.onViewChange(null);}render();});
+    runtime.current={camera,controls,renderer,overlay,fit,render,ready:false};
+    async function load() {
+      let faces: any[]=[],measureFeatures:Record<string,MeasureFeature>={};
+      if(current.current.model.format==='stl') {
+        const response=await fetch(fileURL(current.current.model.file_id),{signal:abort.signal});if(!response.ok) throw new Error('STL file unavailable.');
+        geometry=new STLLoader().parse(await response.arrayBuffer());
+        geometry.scale(current.current.stlUnit==='in'?25.4:1,current.current.stlUnit==='in'?25.4:1,current.current.stlUnit==='in'?25.4:1);
+      } else {
+        const response=await fetch(fileURL(current.current.model.result.mesh),{signal:abort.signal});if(!response.ok) throw new Error('Model unavailable. Reload or check sharing access.');
+        const data=await response.json(); const indexed=new THREE.BufferGeometry();indexed.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));indexed.setIndex(data.indices);geometry=indexed.toNonIndexed(); indexed.dispose();ids=data.tri_face;faces=data.faces;cadEdges=data.edges||[];measureFeatures=data.measure_features||{};faceMetadata=faces;rims=cylinderRims(geometry,ids,faces);
+      }
+      if(stopped) {geometry.dispose();return;}
+      const positions=geometry.getAttribute('position');
+      if(!positions.count || positions.count > 6000000 || !Array.from(positions.array).every(Number.isFinite)) throw new Error('Mesh is empty, too large or contains invalid coordinates.');
+      geometry.computeBoundingBox();const box=geometry.boundingBox!;box.getCenter(center);extent=box.getSize(new THREE.Vector3()).length();
+      if(!Number.isFinite(extent)||extent<=0) throw new Error('Model has no measurable extent.');
+      const colors=new Float32Array(positions.count*3), base=new THREE.Color('#687F91');for(let i=0;i<positions.count;i++)colors.set([base.r,base.g,base.b],i*3);
+      geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));geometry.computeVertexNormals();
+      mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,metalness:.15,roughness:.65,side:THREE.DoubleSide}));scene.add(mesh);
+      edge=new THREE.LineSegments(new THREE.EdgesGeometry(geometry,30),new THREE.LineBasicMaterial({color:0x000000}));scene.add(edge);
+      fit();const saved=current.current.model.state?.camera;
+      if(saved?.position?.length===3 && saved?.target?.length===3 && [...saved.position,...saved.target,saved.zoom].every(Number.isFinite)){camera.position.fromArray(saved.position);if(saved.up?.length===3&&saved.up.every(Number.isFinite))camera.up.fromArray(saved.up);controls.target.fromArray(saved.target);camera.zoom=Math.max(.01,Math.min(100,saved.zoom));camera.updateProjectionMatrix();controls.update();viewQuaternion=null;current.current.onViewChange(null);}
+      runtime.current.ready=true;current.current.onReady(faces,measureFeatures); render();
+    }
+    load().catch(e=>{if(!stopped) current.current.onError(e.message);});
+    function animate(){if(stopped)return;controls.update();render();frame=requestAnimationFrame(animate);}animate();
+    return()=>{stopped=true;abort.abort();cancelAnimationFrame(frame);observer.disconnect();container.removeEventListener('keydown',keyDown);controls.dispose();geometry?.dispose();if(mesh)(mesh.material as THREE.Material).dispose();if(edge){edge.geometry.dispose();(edge.material as THREE.Material).dispose();}renderer.dispose();container.replaceChildren();runtime.current=null;};
+  },[props.model.file_id,props.stlUnit]);
+  return <div className="canvas-host" ref={host} tabIndex={0} role="application" aria-label={`Interactive model of ${props.model.name}. Drag to orbit, scroll to zoom. Click a hole then an edge for centre distance. Move the mouse and click empty space to place the dimension. Drag to rotate. Keyboard: left and right arrows highlight faces; Enter selects; Escape clears selection.`}/>;
+});

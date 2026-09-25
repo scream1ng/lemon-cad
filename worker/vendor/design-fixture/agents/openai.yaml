@@ -1,0 +1,13 @@
+interface:
+  display_name: "Design Fixture"
+  short_description: "Weld or checking fixtures, preview before finalizing"
+  default_prompt: "Use $design-fixture to design a fixture from this STEP model, starting with an interactive concept for review."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+policy:
+  allow_implicit_invocation: true
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
