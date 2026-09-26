@@ -23,7 +23,7 @@ from OCP.GeomAbs import (
     GeomAbs_Plane,
 )
 from OCP.GProp import GProp_GProps
-from OCP.TopAbs import TopAbs_REVERSED
+from OCP.TopAbs import TopAbs_EDGE, TopAbs_REVERSED
 from OCP.TopExp import TopExp
 from OCP.TopLoc import TopLoc_Location
 from OCP.TopoDS import TopoDS
@@ -249,7 +249,81 @@ def _centroid(face) -> tuple[float, float, float]:
     return (c.X(), c.Y(), c.Z())
 
 
-def _face_meta(face, idx: int) -> dict:
+def _cylinder_geometry(face):
+    """Return a native or exactly recoverable NURBS cylinder and its face sweep."""
+    surf = BRepAdaptor_Surface(face)
+    if surf.GetType() == GeomAbs_Cylinder:
+        return surf.Cylinder(), math.degrees(surf.LastUParameter() - surf.FirstUParameter())
+    from OCP.GeomAbs import GeomAbs_BSplineSurface
+    if surf.GetType() != GeomAbs_BSplineSurface:
+        return None
+    from OCP.Geom import Geom_CylindricalSurface
+    from OCP.GeomConvert import GeomConvert_SurfToAnaSurf
+    try:
+        analytic = GeomConvert_SurfToAnaSurf(_static(BRep_Tool, "Surface")(face)).ConvertToAnalytical(1e-6)
+    except Exception:
+        return None
+    if not isinstance(analytic, Geom_CylindricalSurface):
+        return None
+    cyl = analytic.Cylinder()
+    axis = cyl.Axis().Direction()
+    direction = (axis.X(), axis.Y(), axis.Z())
+    from OCP.TopAbs import TopAbs_VERTEX
+    vertices = []
+    for vertex in _explore(face, TopAbs_VERTEX):
+        p = _static(BRep_Tool, "Pnt")(_static(TopoDS, "Vertex")(vertex))
+        vertices.append(_dot((p.X(), p.Y(), p.Z()), direction))
+    height = max(vertices) - min(vertices) if vertices else 0
+    if height <= 1e-6:
+        return None
+    props = GProp_GProps()
+    _surface_props(face, props)
+    sweep = math.degrees(props.Mass() / (cyl.Radius() * height))
+    return cyl, sweep if sweep <= 360.5 else 360.0
+
+
+def _cylinder_faces(shape, fmap=None):
+    """Join adjacent faces on the same cylinder (common in NURBS STEP exports)."""
+    fmap = fmap or _face_map(shape)
+    found = {}
+    for i in range(1, fmap.Extent() + 1):
+        geometry = _cylinder_geometry(_face(fmap.FindKey(i)))
+        if geometry:
+            found[i] = {"cylinder": geometry[0], "sweep": geometry[1], "group": i}
+    if not found:
+        return found
+    emap = _edge_map(shape)
+    users = {}
+    for i in found:
+        for edge in _explore(_face(fmap.FindKey(i)), TopAbs_EDGE):
+            users.setdefault(emap.FindIndex(edge), []).append(i)
+    parent = {i: i for i in found}
+    def root(i):
+        while parent[i] != i:
+            i = parent[i]
+        return i
+    for adjacent in users.values():
+        for a in adjacent:
+            for b in adjacent:
+                if a >= b:
+                    continue
+                ca, cb = found[a]["cylinder"], found[b]["cylinder"]
+                da, db = ca.Axis().Direction(), cb.Axis().Direction()
+                va, vb = (da.X(), da.Y(), da.Z()), (db.X(), db.Y(), db.Z())
+                pa, pb = ca.Axis().Location(), cb.Axis().Location()
+                offset = (pa.X() - pb.X(), pa.Y() - pb.Y(), pa.Z() - pb.Z())
+                if abs(ca.Radius() - cb.Radius()) < 1e-5 and abs(_dot(va, vb)) > 1 - 1e-8 and math.sqrt(_dot(_cross(offset, va), _cross(offset, va))) < 1e-5:
+                    parent[root(b)] = root(a)
+    totals = {}
+    for i, info in found.items():
+        info["group"] = root(i)
+        totals[info["group"]] = totals.get(info["group"], 0) + info["sweep"]
+    for info in found.values():
+        info["group_sweep"] = totals[info["group"]]
+    return found
+
+
+def _face_meta(face, idx: int, cylinders=None) -> dict:
     surf = BRepAdaptor_Surface(face)
     t = surf.GetType()
     meta: dict = {"id": idx, "type": "other"}
@@ -265,12 +339,15 @@ def _face_meta(face, idx: int) -> dict:
         if face.Orientation() == TopAbs_REVERSED:
             n = [-v for v in n]
         meta["normal"] = [round(v, 5) for v in n]
-    elif t == GeomAbs_Cylinder:
+    elif idx in (cylinders or {}) or t == GeomAbs_Cylinder:
         meta["type"] = "cylinder"
-        cyl = surf.Cylinder()
+        info = cylinders[idx] if cylinders else None
+        cyl = info["cylinder"] if info else surf.Cylinder()
         meta["radius"] = round(cyl.Radius(), 3)
-        sweep = math.degrees(surf.LastUParameter() - surf.FirstUParameter())
+        sweep = info["group_sweep"] if info else math.degrees(surf.LastUParameter() - surf.FirstUParameter())
         meta["sweep_deg"] = round(sweep, 1)
+        if info:
+            meta["cylinder_group"] = info["group"]
         ax = cyl.Axis().Direction()
         meta["axis"] = [round(ax.X(), 5), round(ax.Y(), 5), round(ax.Z(), 5)]
     return meta
@@ -314,6 +391,7 @@ def faced_mesh(shape) -> dict:
     # (parallel) overload is missing on some OCC builds.
     BRepMesh_IncrementalMesh(shape, 0.3, False, 0.5).Perform()
     fmap = _face_map(shape)
+    cylinders = _cylinder_faces(shape, fmap)
     positions: list[float] = []
     indices: list[int] = []
     tri_face: list[int] = []
@@ -321,7 +399,7 @@ def faced_mesh(shape) -> dict:
     vbase = 0
     for i in range(1, fmap.Extent() + 1):
         face = _face(fmap.FindKey(i))
-        faces.append(_face_meta(face, i))
+        faces.append(_face_meta(face, i, cylinders))
         loc = TopLoc_Location()
         tri = _triangulation(face, loc)
         if tri is None:
@@ -353,6 +431,30 @@ def faced_mesh(shape) -> dict:
 # ---------------------------------------------------------------------------
 
 _EDGE_TYPE = {GeomAbs_Line: "line", GeomAbs_Circle: "circle"}
+
+
+def _edge_geometry(edge):
+    curve = BRepAdaptor_Curve(edge)
+    kind = _EDGE_TYPE.get(curve.GetType())
+    if kind:
+        return kind, curve.Line() if kind == "line" else curve.Circle()
+    from OCP.GeomAbs import GeomAbs_BSplineCurve
+    if curve.GetType() != GeomAbs_BSplineCurve:
+        return None
+    from OCP.Geom import Geom_Circle, Geom_Line
+    from OCP.GeomConvert import GeomConvert_CurveToAnaCurve
+    try:
+        analytic = GeomConvert_CurveToAnaCurve.ComputeCurve_s(
+            _static(BRep_Tool, "Curve")(edge, 0.0, 0.0), 1e-6,
+            curve.FirstParameter(), curve.LastParameter(), 0.0, 0.0, 0.0
+        )
+    except Exception:
+        return None
+    if isinstance(analytic, Geom_Line):
+        return "line", analytic.Lin()
+    if isinstance(analytic, Geom_Circle):
+        return "circle", analytic.Circ()
+    return None
 
 
 def indexed_edges(shape) -> list:
@@ -389,7 +491,7 @@ def indexed_edges(shape) -> list:
             out.append(
                 {
                     "id": i,
-                    "type": _EDGE_TYPE.get(curve.GetType(), "curve"),
+                    "type": (_edge_geometry(edge) or ("curve", None))[0],
                     "points": pts,
                 }
             )
@@ -442,8 +544,7 @@ def _solve3(rows, b):
 
 def _cylinder_center(face):
     """Axis-projected centre, unit axis, radius of a cylindrical face."""
-    s = BRepAdaptor_Surface(face)
-    cyl = s.Cylinder()
+    cyl = _cylinder_geometry(face)[0]
     base = (cyl.Axis().Location().X(), cyl.Axis().Location().Y(), cyl.Axis().Location().Z())
     axis = _unit((cyl.Axis().Direction().X(), cyl.Axis().Direction().Y(), cyl.Axis().Direction().Z()))
     c = _centroid(face)
@@ -457,10 +558,10 @@ def measure_single(shape, kind: str, ent_id: int) -> dict:
     if kind != "face":
         raise ValueError("single-entity dimension needs a cylindrical face")
     f = _face(_sub_shape(shape, "face", ent_id))
-    s = BRepAdaptor_Surface(f)
-    if s.GetType() != GeomAbs_Cylinder:
+    info = _cylinder_faces(shape).get(ent_id)
+    if not info:
         raise ValueError("pick a hole or cylindrical face for Ø / R")
-    cyl = s.Cylinder()
+    cyl = info["cylinder"]
     r = cyl.Radius()
     ax = cyl.Axis()
     base = (ax.Location().X(), ax.Location().Y(), ax.Location().Z())
@@ -472,7 +573,7 @@ def measure_single(shape, kind: str, ent_id: int) -> dict:
     if math.sqrt(_dot(perp, perp)) < 1e-6:
         perp = _cross(axis, (0.0, 1.0, 0.0))
     perp = _unit(perp)
-    sweep = math.degrees(s.LastUParameter() - s.FirstUParameter())
+    sweep = info["group_sweep"]
     if sweep >= 350:
         p1 = [center[i] + perp[i] * r for i in range(3)]
         p2 = [center[i] - perp[i] * r for i in range(3)]
@@ -574,8 +675,9 @@ def measure(
             return res
 
         # cylinder (hole) + plane -> centre-to-surface distance
-        if {a1.GetType(), a2.GetType()} == {GeomAbs_Cylinder, GeomAbs_Plane}:
-            fcyl, fpln = (f1, f2) if a1.GetType() == GeomAbs_Cylinder else (f2, f1)
+        c1, c2 = _cylinder_geometry(f1), _cylinder_geometry(f2)
+        if (c1 and a2.GetType() == GeomAbs_Plane) or (c2 and a1.GetType() == GeomAbs_Plane):
+            fcyl, fpln = (f1, f2) if c1 else (f2, f1)
             apln = BRepAdaptor_Surface(fpln)
             center, _axis, _r = _cylinder_center(fcyl)
             pln = apln.Plane()

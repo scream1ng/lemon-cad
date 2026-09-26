@@ -1,0 +1,330 @@
+<!doctype html>
+<!--
+LemonCAD workspace prototype — static design review only; no CAD processing or messages sent.
+Decisions: two panels (Chat/Projects left, CAD work right); each can minimize independently.
+The avatar owns account actions. Open, export, share, and save stay inside the CAD panel.
+Chat offers a contextual Tools menu for draft drawing, costing, and weld/checking fixtures.
+Selecting a workflow reveals its review gate in the work panel. No My files drawer or bottom action strip.
+Desktop keeps the CAD surface dominant. Mobile puts CAD first and starts with Chat/Projects minimized.
+Research: Claude artifacts place editable work beside conversation
+(https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them);
+Claude Projects group related chats and content
+(https://support.claude.com/en/articles/9519177-how-can-i-create-and-manage-projects);
+Claude Design pairs conversation with a canvas and works from a design system
+(https://support.claude.com/en/articles/14604416-get-started-with-claude-design);
+Figma Make uses a preview/work surface with a distinct mobile preview
+(https://help.figma.com/hc/en-us/articles/31304548273047-Preview-a-functional-prototype-or-web-app).
+The progressive disclosure and LemonCAD layout below are design inferences, not vendor rules.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LemonCAD · Workspace prototype</title>
+  <link rel="stylesheet" href="../frontend/src/style.css">
+  <style>
+    html,body{height:auto!important;overflow:auto!important;position:static!important}
+    body{margin:0!important;padding:0!important;background:#e9ece3;color:#29352b}
+    [hidden]{display:none!important}
+    .review-bar{max-width:1280px;margin:auto;padding:20px 24px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .review-bar h1{font-size:16px;letter-spacing:-.02em;margin:0}
+    .review-bar p{font-size:12px;color:#59634c;margin:2px 0 0}
+    .preview-switch{display:flex;gap:3px;padding:3px;border:1px solid #d5dbce;border-radius:7px;background:#fffefa}
+    .preview-switch button{min-height:32px;padding:5px 11px;border-radius:4px;font-size:12px}
+    .preview-switch button[aria-pressed=true]{background:#edf1e7;font-weight:600}
+    .preview-frame{width:100%;max-width:1280px;margin:0 auto 32px;container:workspace-preview / inline-size}
+    .preview-frame.is-mobile{width:min(390px,calc(100% - 24px))}
+    .proto-shell{max-width:none;min-height:0;border:0;border-radius:10px;background:#f5f6f0;box-shadow:0 8px 28px #29352b0b;overflow:visible}
+    .proto-shell>.header{height:64px;min-height:64px;padding:0 24px;display:grid;grid-template-columns:1fr auto 1fr;gap:16px;border:0;background:transparent}
+    .proto-shell .brand{justify-self:start}.proto-shell .brand img{width:149px}
+    .proto-shell nav{justify-self:center;align-self:stretch}
+    .proto-shell .account{justify-self:end;margin:0;position:relative}
+    .avatar-button{width:38px;height:38px;display:grid;place-items:center;border:1px solid #dfe3d7;border-radius:7px;background:#fffefa}
+    .avatar-button svg{width:22px;height:22px;stroke:#29352b;fill:none;stroke-width:1.7}
+    .proto-shell main{padding:0 16px 16px}
+    .proto-shell .workspace-stage{display:grid;grid-template-columns:292px minmax(0,1fr);gap:16px;align-items:stretch}
+    .proto-shell .workspace-stage.side-closed{grid-template-columns:56px minmax(0,1fr)}
+    .proto-shell .workspace-stage.work-closed{grid-template-columns:minmax(292px,1fr) 238px}
+    .proto-shell .workspace-stage.side-closed.work-closed{grid-template-columns:56px minmax(0,238px)}
+    .proto-shell .workspace-sidepanel,.proto-shell .model-workspace{height:640px;min-height:0;border:0;border-radius:12px;background:#fffefa;box-shadow:0 2px 12px #29352b09;overflow:hidden}
+    .proto-shell .workspace-sidepanel{display:flex;flex-direction:column}
+    .side-head{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid #dfe3d7}
+    .side-head .tabs{display:flex;gap:4px}
+    .side-head .side-label{display:none}
+    .side-head .tabs button{min-height:38px;padding:7px 12px;border-radius:6px;font-size:13px}
+    .side-head .tabs button[aria-selected=true]{background:#f8f4cd;font-weight:600}
+    .icon-button{width:36px;height:36px;display:grid;place-items:center;flex:none;border:1px solid #dfe3d7;border-radius:6px;background:#fffefa}
+    .icon-button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .side-content{display:flex;flex:1;min-height:0;flex-direction:column}
+    .side-rail{display:none;writing-mode:vertical-rl;margin:12px auto;font-size:12px;font-weight:600;color:#59634c}
+    .side-closed .workspace-sidepanel{height:640px}
+    .side-closed .side-head{flex-direction:column;padding:10px 4px;border:0}
+    .side-closed .side-head .tabs,.side-closed .side-content{display:none}
+    .side-closed .side-rail{display:block}
+    .chat-pane{display:flex;flex:1;min-height:0;flex-direction:column}
+    .chat-intro{padding:26px 20px 0}
+    .chat-intro h2{font-size:19px;letter-spacing:-.025em;margin:0 0 8px}
+    .chat-intro p{margin:0;color:#59634c;font-size:12px;line-height:1.5}
+    .part-context{display:flex;align-items:center;gap:8px;margin-top:18px;padding:8px 9px;border-radius:6px;background:#f5f6f0;font-size:11px;overflow:hidden}
+    .part-context svg{width:16px;height:16px;flex:none;stroke:#59634c;fill:none;stroke-width:1.8}
+    .part-context span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .composer{position:relative;margin:auto 12px 12px;padding:12px;border:1px solid #c8cfbf;border-radius:9px;background:#fffefa}
+    .composer textarea{display:block;min-height:72px;width:100%;padding:2px 0 12px;border:0;resize:none;font-size:13px}
+    .composer textarea:focus-visible{outline-offset:0}
+    .composer-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .composer-actions .tool-trigger{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:5px 7px;border-radius:5px;font-size:12px;font-weight:600}
+    .composer-actions .tool-trigger svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+    .composer-actions .send{width:34px;height:34px;display:grid;place-items:center;border-radius:6px;background:#f3df38}
+    .composer-actions .send svg{width:17px;height:17px;stroke:#29352b;fill:none;stroke-width:1.8}
+    .pane-caption{margin:0 20px 17px;color:#59634c;font-size:11px}
+    .projects-pane{display:flex;flex:1;min-height:0;flex-direction:column}
+    .projects-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 18px 10px}
+    .projects-controls select{max-width:135px;padding:4px 0;border:0;background:transparent;font-size:12px}
+    .projects-controls button{font-size:11px;text-decoration:underline;text-underline-offset:3px}
+    .projects-pane input{margin:0 16px 8px;width:calc(100% - 32px);padding:9px;font-size:12px}
+    .project-list{padding:5px 12px;overflow:auto}
+    .project-list h3{margin:14px 8px 6px;color:#59634c;font-size:11px;font-weight:600}
+    .project-row{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px;border-radius:6px;text-align:left}
+    .project-row[aria-current=true]{background:#f8f4cd}
+    .project-row svg{width:18px;height:18px;flex:none;stroke:#59634c;fill:none;stroke-width:1.7}
+    .project-row span{font-size:12px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .project-row small{display:block;color:#59634c;font-size:11px;font-weight:400}
+    .work-panel{min-width:0}
+    .work-summary{display:none;align-items:center;justify-content:space-between;gap:8px;min-height:72px;padding:12px 15px;border-radius:12px;background:#fffefa;box-shadow:0 2px 12px #29352b09}
+    .work-summary span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}
+    .work-closed .work-summary{display:flex}
+    .work-closed .model-workspace{display:none}
+    .proto-shell .model-workspace{display:flex;flex-direction:column}
+    .model-head{display:flex;align-items:center;gap:12px;min-height:62px;padding:10px 14px 10px 20px}
+    .model-heading{min-width:0;flex:1}
+    .model-heading h2{margin:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .model-heading p{margin:2px 0 0;color:#59634c;font-size:11px}
+    .model-actions{display:flex;align-items:center;gap:8px}
+    .model-actions .button{min-height:34px;padding:6px 11px}
+    .model-head>.icon-button{margin-left:2px}
+    .menu-wrap{position:relative}
+    .dropdown{position:absolute;z-index:30;top:calc(100% + 6px);right:0;width:188px;padding:5px;border:1px solid #dfe3d7;border-radius:7px;background:#fffefa;box-shadow:0 10px 24px #29352b1c}
+    .dropdown[hidden]{display:none}
+    .dropdown button{display:block;width:100%;min-height:38px;padding:8px 10px;border-radius:4px;text-align:left;font-size:12px}
+    .dropdown button:hover,.dropdown button:focus-visible{background:#edf1e7}
+    .dropdown strong{display:block;font-size:12px}.dropdown small{display:block;margin-top:2px;color:#59634c;font-size:11px}
+    .dropdown .menu-identity{padding:9px 10px 12px;margin-bottom:5px;border-bottom:1px solid #dfe3d7}
+    .account-menu{width:216px}
+    .tools-menu{left:0;right:auto;width:218px;bottom:calc(100% + 6px);top:auto}
+    .cad-field{position:relative;flex:1;min-height:0;margin:0 8px;background:#f3f5ee;border-radius:9px;overflow:hidden}
+    .part-study{position:absolute;inset:0;display:grid;place-items:center}
+    .part-study img{display:block;width:min(78%,610px);max-height:79%;object-fit:contain}
+    .cad-field .cad-viewbar,.cad-field .cad-toolrail,.cad-field .orientation-tools{position:absolute;z-index:2;display:flex;align-items:center;gap:3px;padding:4px;border:1px solid #dfe3d7;border-radius:7px;background:#fffefa;box-shadow:0 4px 16px #29352b12}
+    .cad-field .cad-viewbar{top:16px;left:50%;transform:translateX(-50%)}
+    .cad-field .cad-toolrail{top:50%;left:16px;transform:translateY(-50%);flex-direction:column}
+    .cad-field .orientation-tools{top:16px;right:16px;bottom:auto}
+    .cad-field .cad-viewbar button,.cad-field .orientation-tools button{min-height:32px;padding:5px 8px;border-radius:5px;font-size:12px;white-space:nowrap}
+    .cad-field .cad-viewbar button[aria-pressed=true],.cad-field .orientation-tools button[aria-pressed=true],.cad-field .cad-toolrail button[aria-pressed=true]{background:#f8f4cd}
+    .cad-field .cad-toolrail button{width:32px;height:32px;display:grid;place-items:center;border-radius:5px}
+    .cad-field .cad-toolrail svg{width:18px;height:18px;stroke:#29352b;fill:none;stroke-width:1.8}
+    .cad-field .cad-viewbar select{width:58px;padding:4px 2px;border:0;background:transparent;font-size:12px}
+    .cad-separator{width:1px;height:20px;margin:0 3px;background:#dfe3d7}
+    .cad-field .cad-toolrail .cad-separator{width:20px;height:1px}
+    .canvas-hint{position:absolute;left:16px;bottom:16px;padding:7px 10px;border:1px solid #dfe3d7;border-radius:5px;background:#fffefae8;font-size:11px}
+    .model-status{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;padding:7px 20px;color:#59634c;font-size:11px}
+    .model-status output{color:#29352b;font-variant-numeric:tabular-nums}
+    .workflow-view{display:grid;align-content:start;gap:18px;flex:1;padding:28px 32px;border-top:1px solid #dfe3d7}
+    .workflow-view .back{justify-self:start;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+    .workflow-view h2{margin:4px 0 0;font-size:24px;letter-spacing:-.03em}
+    .workflow-view p{max-width:58ch;margin:0;color:#59634c;font-size:13px}
+    .workflow-steps{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;color:#59634c;font-size:11px}
+    .workflow-steps span{padding:7px 9px;border:1px solid #dfe3d7;border-radius:5px;background:#fffefa}
+    .workflow-steps span:first-child{background:#f8f4cd;border-color:#d8ce85;color:#29352b;font-weight:600}
+    .workflow-next{max-width:510px;margin-top:10px;padding-top:18px;border-top:1px solid #dfe3d7}
+    .workflow-next strong{display:block;margin-bottom:5px;font-size:13px}
+    .workflow-next .button{margin-top:18px}
+    .proto-toast{position:fixed;z-index:50;left:50%;bottom:18px;transform:translateX(-50%);padding:9px 14px;border-radius:6px;background:#29352b;color:#fffefa;font-size:12px}
+    .proto-shell button:focus-visible,.proto-shell textarea:focus-visible,.proto-shell select:focus-visible,.preview-switch button:focus-visible{outline:2px solid #59634c;outline-offset:2px}
+    @container workspace-preview (max-width:760px){
+      .proto-shell>.header{height:auto;min-height:94px;padding:12px;grid-template-columns:1fr auto;gap:4px}
+      .proto-shell nav{grid-column:1/-1;grid-row:2;justify-self:center;height:30px;order:initial}
+      .proto-shell main{padding:10px 12px 12px}
+      .proto-shell .workspace-stage,.proto-shell .workspace-stage.side-closed,.proto-shell .workspace-stage.work-closed,.proto-shell .workspace-stage.side-closed.work-closed{display:flex;flex-direction:column;gap:12px}
+      .proto-shell .work-panel{order:1;width:100%}.proto-shell .workspace-sidepanel{order:2;width:100%;height:390px}
+      .proto-shell .workspace-sidepanel.is-collapsed{height:56px;min-height:56px}
+      .side-closed .side-head{height:56px;flex-direction:row;padding:7px 12px}
+      .side-closed .side-head .side-label{display:block;margin-left:3px;font-size:12px;font-weight:600;color:#59634c}
+      .side-closed .side-rail{display:none}
+      .proto-shell .model-workspace{height:540px}
+      .model-head{min-height:106px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:8px}
+      .model-heading{grid-column:1;grid-row:1}.model-head>.icon-button{grid-column:2;grid-row:1;width:44px;height:44px}
+      .model-actions{grid-column:1/-1;grid-row:2}.model-actions .button{min-height:44px}
+      .cad-field .cad-viewbar{left:12px;right:12px;transform:none;justify-content:center;overflow-x:auto}
+      .cad-field .orientation-tools{top:66px;right:12px}
+      .cad-field .cad-toolrail{left:10px}
+      .part-study img{width:86%;max-height:65%}
+      .canvas-hint{max-width:calc(100% - 28px);left:12px;bottom:12px}
+      .model-status{padding:7px 12px}
+      .workflow-view{padding:20px}
+      .work-closed .work-summary{min-height:64px}
+      .icon-button,.composer-actions .send{width:44px;height:44px}
+    }
+    @media(max-width:760px){.review-bar{padding:14px 12px 10px}.review-bar p{display:none}.preview-frame{width:calc(100% - 24px)}}
+    @media(max-width:360px){.review-bar h1{font-size:13px}.preview-switch button{padding-inline:6px}.model-actions{gap:4px}.model-actions .button{padding:6px 8px;font-size:11px}}
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m6-12-3 3 3 3"/></symbol>
+    <symbol id="i-open" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m3 6 3-3-3-3"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7zm-9 5 9 5 9-5m-9 5v10"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6zM14 2v4h4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+    <symbol id="i-orbit" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6M4 4v4h4"/></symbol>
+    <symbol id="i-measure" viewBox="0 0 24 24"><path d="M4 5v14m16-14v14M6 12h12m-9-3-3 3 3 3m6-6 3 3-3 3"/></symbol>
+  </svg>
+
+  <div class="review-bar">
+    <div><h1>LemonCAD workspace</h1><p>Interactive design prototype</p></div>
+    <div class="preview-switch" aria-label="Preview size"><button type="button" data-size="desktop" aria-pressed="true">Desktop</button><button type="button" data-size="mobile" aria-pressed="false">Mobile</button></div>
+  </div>
+  <div class="preview-frame" id="preview">
+    <div class="app-shell unified-screen cad-screen proto-shell">
+      <header class="header">
+        <button class="brand" type="button" data-toast="LemonCAD home is outside this prototype." aria-label="LemonCAD home"><img src="assets/lemoncad-logo.svg" alt="LemonCAD"></button>
+        <nav aria-label="Primary"><button class="active" type="button" aria-current="page">Viewer</button><button type="button" data-toast="Pricing is outside this prototype.">Pricing</button></nav>
+        <div class="account menu-wrap">
+          <button class="avatar-button" type="button" aria-label="Alex, account menu" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-menu-trigger="account-menu"><svg aria-hidden="true"><use href="#i-user"/></svg></button>
+          <div class="dropdown account-menu" id="account-menu" role="menu" hidden>
+            <div class="menu-identity"><strong>Alex Morgan</strong><small>Workspace owner</small></div>
+            <button type="button" role="menuitem" data-show-projects>My projects</button>
+            <button type="button" role="menuitem" data-toast="Account settings are outside this prototype.">Account settings</button>
+            <button type="button" role="menuitem" data-toast="Sign out is outside this prototype.">Sign out</button>
+          </div>
+        </div>
+      </header>
+      <main>
+        <div class="workspace-stage" id="workspace">
+          <aside class="workspace-sidepanel" aria-label="Chat and projects">
+            <div class="side-head">
+              <div class="tabs" role="tablist" aria-label="Workspace menu"><button type="button" role="tab" id="chat-tab" aria-selected="true" aria-controls="chat-pane" data-tab="chat">Chat</button><button type="button" role="tab" id="projects-tab" aria-selected="false" aria-controls="projects-pane" data-tab="projects">Projects</button></div>
+              <span class="side-label" aria-hidden="true">Workspace</span>
+              <button class="icon-button" type="button" id="side-toggle" aria-label="Minimize Chat and Projects" title="Minimize Chat and Projects" aria-expanded="true" aria-controls="side-content"><svg aria-hidden="true"><use href="#i-panel"/></svg></button>
+            </div>
+            <span class="side-rail" aria-hidden="true">Workspace</span>
+            <div class="side-content" id="side-content">
+              <section class="chat-pane" id="chat-pane" role="tabpanel" aria-labelledby="chat-tab">
+                <div class="chat-intro"><h2>What would you like to make?</h2><p>Work with your part beside you.</p><div class="part-context"><svg aria-hidden="true"><use href="#i-box"/></svg><span>mounting-bracket.step</span></div></div>
+                <div class="composer">
+                  <label class="sr-only" for="chat-message">Ask about this part</label>
+                  <textarea id="chat-message" placeholder="Ask about this part…"></textarea>
+                  <div class="composer-actions">
+                    <div class="menu-wrap"><button class="tool-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="tools-menu" data-menu-trigger="tools-menu"><svg aria-hidden="true"><use href="#i-plus"/></svg>Tools</button>
+                      <div class="dropdown tools-menu" id="tools-menu" role="menu" hidden>
+                        <button type="button" role="menuitem" data-workflow="drawing"><strong>Draft drawing</strong><small>Review sheets before PDF</small></button>
+                        <button type="button" role="menuitem" data-workflow="costing"><strong>Cost estimate</strong><small>Check shop assumptions</small></button>
+                        <button type="button" role="menuitem" data-workflow="weld"><strong>Weld fixture</strong><small>Plan datums and clamps</small></button>
+                        <button type="button" role="menuitem" data-workflow="checking"><strong>Checking fixture</strong><small>Plan inspection features</small></button>
+                      </div>
+                    </div>
+                    <button class="send" type="button" aria-label="Send message" data-toast="This prototype does not send messages."><svg aria-hidden="true"><use href="#i-send"/></svg></button>
+                  </div>
+                </div>
+                <p class="pane-caption">Choose Tools for a drawing, estimate, or fixture.</p>
+              </section>
+              <section class="projects-pane" id="projects-pane" role="tabpanel" aria-labelledby="projects-tab" hidden>
+                <div class="projects-controls"><select aria-label="Project ownership"><option>My projects</option><option>Shared with me</option></select><button type="button" data-toast="Folder creation is outside this prototype.">+ New folder</button></div>
+                <label class="sr-only" for="project-search">Search projects</label><input id="project-search" type="search" placeholder="Search projects…">
+                <div class="project-list"><h3>Folders</h3>
+                  <button class="project-row" type="button" data-toast="Prototype folder: Brackets"><svg aria-hidden="true"><use href="#i-folder"/></svg><span>Brackets<small>3 projects · Private</small></span></button>
+                  <h3>Recent files</h3>
+                  <button class="project-row" type="button" aria-current="true"><svg aria-hidden="true"><use href="#i-file"/></svg><span>mounting-bracket<small>Private draft · STEP</small></span></button>
+                  <button class="project-row" type="button" data-toast="Prototype project: hinge-plate"><svg aria-hidden="true"><use href="#i-file"/></svg><span>hinge-plate<small>Published · STEP</small></span></button>
+                </div>
+              </section>
+            </div>
+          </aside>
+
+          <section class="work-panel" aria-label="CAD work">
+            <div class="work-summary"><span>mounting-bracket.step</span><button class="button small" type="button" id="work-expand"><svg aria-hidden="true" width="16" height="16"><use href="#i-open"/></svg>Expand CAD</button></div>
+            <div class="model-workspace">
+              <div class="model-head" id="model-head">
+                <div class="model-heading"><h2>mounting-bracket.step</h2><p>Private draft · STEP</p></div>
+                <div class="model-actions">
+                  <button class="button" type="button" data-toast="A CAD file chooser would open.">Open</button>
+                  <div class="menu-wrap"><button class="button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu" data-menu-trigger="file-menu">File <span aria-hidden="true">⌄</span></button>
+                    <div class="dropdown" id="file-menu" role="menu" hidden>
+                      <button type="button" role="menuitem" data-toast="PNG export is a prototype action.">Export PNG</button>
+                      <button type="button" role="menuitem" data-toast="PDF export is a prototype action.">Export PDF</button>
+                      <button type="button" role="menuitem" data-toast="Folder sharing is a prototype action.">Share folder</button>
+                    </div>
+                  </div>
+                  <button class="button primary" type="button" data-toast="Draft saved in this prototype.">Save draft</button>
+                </div>
+                <button class="icon-button" type="button" id="work-toggle" aria-label="Minimize CAD work" title="Minimize CAD work" aria-expanded="true" aria-controls="work-content"><svg aria-hidden="true"><use href="#i-panel"/></svg></button>
+              </div>
+              <div id="work-content" style="display:flex;flex:1;min-height:0;flex-direction:column">
+                <div class="cad-field" id="cad-field">
+                  <div class="part-study"><img src="assets/lemoncad-part-study.svg" alt="Illustrative mounting bracket with measured holes"></div>
+                  <div class="cad-viewbar" role="toolbar" aria-label="View tools"><button type="button" data-toast="Fit view is a prototype action.">Fit</button><button type="button" data-toast="Shading is a prototype action.">Shaded</button><button type="button" aria-pressed="true" data-toggle-pressed>Dimensions</button><span class="cad-separator" aria-hidden="true"></span><select aria-label="Display units"><option>mm</option><option>in</option></select></div>
+                  <div class="cad-toolrail" role="toolbar" aria-label="Measurement tools"><button type="button" aria-label="Explore model" title="Explore model" aria-pressed="false" data-tool="explore"><svg aria-hidden="true"><use href="#i-orbit"/></svg></button><button type="button" aria-label="Smart Dimension" title="Smart Dimension" aria-pressed="true" data-tool="dimension"><svg aria-hidden="true"><use href="#i-measure"/></svg></button></div>
+                  <div class="orientation-tools" role="toolbar" aria-label="Standard views"><button type="button" aria-pressed="true" data-view>Iso</button><button type="button" aria-pressed="false" data-view>Front</button><button type="button" aria-pressed="false" data-view>Top</button><button type="button" aria-pressed="false" data-view>Right</button></div>
+                  <div class="canvas-hint">Click a feature to measure · Drag to rotate</div>
+                </div>
+                <div class="model-status"><span>STEP geometry · 2 dimensions</span><output>Ø12.00 mm</output></div>
+              </div>
+              <div class="workflow-view" id="workflow-view" hidden>
+                <button class="back" type="button" id="back-to-cad">← Back to CAD</button>
+                <div><h2 id="workflow-title">Draft drawing</h2><p id="workflow-description"></p></div>
+                <div class="workflow-steps" aria-label="Workflow stages"><span>1 · Inputs</span><span>2 · Draft</span><span>3 · Review</span><span>4 · Export</span></div>
+                <div class="workflow-next"><strong id="workflow-next-title"></strong><p id="workflow-next-copy"></p><button class="button primary" type="button" data-toast="This workflow is a design preview.">Continue</button></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div class="proto-toast" id="toast" role="status" hidden></div>
+  <script>
+    const preview=document.querySelector('#preview'),workspace=document.querySelector('#workspace'),toast=document.querySelector('#toast');
+    const menus=[...document.querySelectorAll('.dropdown[role="menu"]')];
+    const workflowCopy={
+      drawing:['Draft drawing','Turn measured STEP geometry into a draft sheet. Review dimensions and omissions before the PDF is available.','Set drawing inputs','Confirm material, title and hidden-line setting.'],
+      costing:['Cost estimate','Calculate from your shop assumptions. Review material, setup, cycle time and rates before saving the estimate.','Check assumptions','Enter the material cost and your own shop rates.'],
+      weld:['Weld fixture','Plan datums, support and clamp access. An engineer reviews the concept before a verified fixture package.','Define fixture intent','Choose the locating faces, weld access and expected quantity.'],
+      checking:['Checking fixture','Plan a repeatable inspection. An engineer reviews the concept before a verified fixture package.','Define inspection','Choose the critical features, tolerances and reference datums.']
+    };
+    function showToast(message){toast.textContent=message;toast.hidden=false;clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.hidden=true,3000)}
+    function closeMenus(restore=false){menus.forEach(menu=>{if(!menu.hidden){menu.hidden=true;const trigger=document.querySelector('[aria-controls="'+menu.id+'"]');trigger?.setAttribute('aria-expanded','false');if(restore)trigger?.focus()}})}
+    document.addEventListener('click',event=>{
+      const target=event.target.closest('button');
+      if(!target){if(!event.target.closest('.dropdown'))closeMenus();return}
+      if(target.dataset.menuTrigger){const menu=document.getElementById(target.dataset.menuTrigger),opening=menu.hidden;closeMenus();menu.hidden=!opening;target.setAttribute('aria-expanded',String(opening));if(opening)menu.querySelector('[role="menuitem"]')?.focus();return}
+      if(target.closest('.dropdown'))closeMenus();
+      if(target.dataset.toast)showToast(target.dataset.toast);
+      if(target.dataset.size){preview.classList.toggle('is-mobile',target.dataset.size==='mobile');document.querySelectorAll('[data-size]').forEach(button=>button.setAttribute('aria-pressed',String(button===target)));if(target.dataset.size==='mobile')setSideClosed(true);else setSideClosed(false)}
+      if(target.dataset.tab)setTab(target.dataset.tab);
+      if(target.hasAttribute('data-show-projects')){setSideClosed(false);setTab('projects')}
+      if(target.dataset.workflow)openWorkflow(target.dataset.workflow);
+      if(target.id==='back-to-cad'){document.querySelector('#workflow-view').hidden=true;document.querySelector('#work-content').hidden=false;document.querySelector('#model-head .model-actions').hidden=false}
+      if(target.id==='side-toggle')setSideClosed(!workspace.classList.contains('side-closed'));
+      if(target.id==='work-toggle'||target.id==='work-expand'){const closed=!workspace.classList.contains('work-closed');workspace.classList.toggle('work-closed',closed);document.querySelector('#work-toggle').setAttribute('aria-expanded',String(!closed));if(closed)document.querySelector('#work-expand').focus();else document.querySelector('#work-toggle').focus()}
+      if(target.hasAttribute('data-toggle-pressed'))target.setAttribute('aria-pressed',String(target.getAttribute('aria-pressed')!=='true'));
+      if(target.dataset.tool)document.querySelectorAll('[data-tool]').forEach(button=>button.setAttribute('aria-pressed',String(button===target)));
+      if(target.hasAttribute('data-view'))document.querySelectorAll('[data-view]').forEach(button=>button.setAttribute('aria-pressed',String(button===target)));
+      if(!target.closest('.menu-wrap'))closeMenus();
+    });
+    function setTab(tab){document.querySelectorAll('[data-tab]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.tab===tab)));document.querySelector('#chat-pane').hidden=tab!=='chat';document.querySelector('#projects-pane').hidden=tab!=='projects'}
+    function setSideClosed(closed){workspace.classList.toggle('side-closed',closed);document.querySelector('.workspace-sidepanel').classList.toggle('is-collapsed',closed);const button=document.querySelector('#side-toggle');button.setAttribute('aria-expanded',String(!closed));button.setAttribute('aria-label',closed?'Expand Chat and Projects':'Minimize Chat and Projects');button.title=button.getAttribute('aria-label');button.querySelector('use').setAttribute('href',closed?'#i-open':'#i-panel');if(closed)button.focus()}
+    function openWorkflow(kind){const [title,description,nextTitle,nextCopy]=workflowCopy[kind];document.querySelector('#workflow-title').textContent=title;document.querySelector('#workflow-description').textContent=description;document.querySelector('#workflow-next-title').textContent=nextTitle;document.querySelector('#workflow-next-copy').textContent=nextCopy;document.querySelector('#work-content').hidden=true;document.querySelector('#model-head .model-actions').hidden=true;document.querySelector('#workflow-view').hidden=false;if(workspace.classList.contains('work-closed'))document.querySelector('#work-expand').click();document.querySelector('#back-to-cad').focus()}
+    document.addEventListener('keydown',event=>{
+      const menu=event.target.closest('[role="menu"]');
+      if(menu){const items=[...menu.querySelectorAll('[role="menuitem"]')],index=items.indexOf(document.activeElement);if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();items[event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus()}if(event.key==='Escape'){event.preventDefault();closeMenus(true)}}
+      else if(event.key==='Escape')closeMenus(true);
+      if(event.key==='Enter'&&event.target.id==='chat-message'&&!event.shiftKey){event.preventDefault();showToast('This prototype does not send messages.')}
+      if(event.key==='ArrowRight'||event.key==='ArrowLeft'){const tab=event.target.closest('[role="tab"]');if(tab){event.preventDefault();const next=tab.dataset.tab==='chat'?'projects':'chat';setTab(next);document.querySelector('[data-tab="'+next+'"]').focus()}}
+    });
+    document.addEventListener('focusin',event=>{if(!event.target.closest('.menu-wrap'))closeMenus()});
+    if(matchMedia('(max-width:760px)').matches){preview.classList.add('is-mobile');document.querySelectorAll('[data-size]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.size==='mobile')));setSideClosed(true)}
+  </script>
+</body>
+</html>
