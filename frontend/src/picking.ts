@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {pickEdge,type CadEdge} from './edgePicking.ts';
 
 // Normalize signed zero as well as tessellation noise at a closed cylinder seam.
 const vertexKey=(p:THREE.Vector3)=>p.toArray().map(v=>Math.round(v*10000)).join(',');
@@ -6,11 +7,11 @@ const vertexKey=(p:THREE.Vector3)=>p.toArray().map(v=>Math.round(v*10000)).join(
 export type Rim = {faceId:number; a:THREE.Vector3; b:THREE.Vector3};
 // Cylinder boundary segments let users select a hole at its visible rim, even
 // when the thin cylindrical wall occupies less than a pixel in a front view.
-export function cylinderRims(geometry:THREE.BufferGeometry, ids:number[], faces:{id:number;type:string}[]):Rim[] {
-  const cylinders=new Set(faces.filter(f=>f.type==='cylinder').map(f=>f.id));
+export function cylinderRims(geometry:THREE.BufferGeometry, ids:number[], faces:{id:number;type:string;cylinder_group?:number}[]):Rim[] {
+  const cylinders=new Map(faces.filter(f=>f.type==='cylinder').map(f=>[f.id,f.cylinder_group||f.id]));
   const position=geometry.getAttribute('position'), edges=new Map<string,{rim:Rim;count:number}>();
   for(let triangle=0;triangle<ids.length;triangle++){
-    const faceId=ids[triangle];if(!cylinders.has(faceId))continue;
+    const faceId=cylinders.get(ids[triangle]);if(!faceId)continue;
     const vertices=[0,1,2].map(k=>new THREE.Vector3().fromBufferAttribute(position,triangle*3+k));
     for(let k=0;k<3;k++){
       const a=vertices[k],b=vertices[(k+1)%3];
@@ -44,6 +45,12 @@ export function pickCadFace(ray:THREE.Raycaster, mesh:THREE.Mesh, ids:number[], 
     distance=d;depth=rimDepth;best={id:rim.faceId,point:point.toArray()};
   }
   return best || opening || (direct?{id:ids[direct.faceIndex||0]||0,point:direct.point.toArray()}:undefined);
+}
+
+export function pickCadEntity(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[],rims:Rim[],edges:CadEdge[],faces:{id:number;type:string}[],camera:THREE.Camera,width:number,height:number,x:number,y:number){
+  const face=pickCadFace(ray,mesh,ids,rims,camera,width,height,x,y);
+  if(face&&faces.some(f=>f.id===face.id&&f.type==='cylinder'))return face;
+  return pickEdge(ray,mesh,edges,camera,width,height,x,y)||face;
 }
 
 type RimLoop={faceId:number;points:THREE.Vector3[];plane:THREE.Plane};

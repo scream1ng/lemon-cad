@@ -1,8 +1,16 @@
 export type Point2 = [number, number];
+export function visiblePlanarDimension(a:Point2,b:Point2,scale=1){return Math.hypot(b[0]-a[0],b[1]-a[1])>=6*scale;}
 export function dimensionClick(hit:boolean, selected:number, pending:boolean, dragged:boolean){
   if(dragged)return 'none';
   if(pending&&(!hit||selected===2))return 'place';
   return hit?'select':'none';
+}
+export function cursorLabelPosition(pointer:Point2,width:number,height:number,labelWidth:number,scale=1):Point2{
+  const x=pointer[0]*width,y=pointer[1]*height,margin=12*scale;
+  const center=Math.max(margin+labelWidth/2,Math.min(width-margin-labelWidth/2,x));
+  const topInset=(width/scale<600?120:72)*scale,above=y-40*scale;
+  const baseline=above-17*scale>=topInset?above:Math.max(y+55*scale,topInset+17*scale);
+  return [center,Math.max(24*scale,Math.min(height-12*scale,baseline))];
 }
 export function offsetDimension(a:Point2,b:Point2,label:Point2){
   const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
@@ -14,7 +22,7 @@ export function offsetDimension(a:Point2,b:Point2,label:Point2){
 import * as THREE from 'three';
 export type Placement={position:number[];matrix:number[];viewport:number[]};
 export type Annotation={offset:number[];label:number[]};
-export function anchorDimension(d:{p1:number[];p2:number[];type?:string},placement:Placement):Annotation{
+export function anchorDimension(d:{p1:number[];p2:number[];type?:string;reference_plane?:{origin:number[];normal:number[]}},placement:Placement):Annotation{
   const matrix=new THREE.Matrix4().fromArray(placement.matrix),inverse=matrix.clone().invert();
   const a=new THREE.Vector3(...d.p1).applyMatrix4(matrix),b=new THREE.Vector3(...d.p2).applyMatrix4(matrix);
   const [w,h]=placement.viewport;
@@ -22,9 +30,19 @@ export function anchorDimension(d:{p1:number[];p2:number[];type?:string},placeme
   const label:Point2=[placement.position[0]*w,placement.position[1]*h];
   const offset=offsetDimension(screen(a),screen(b),label);
   const world=(p:Point2,z:number)=>new THREE.Vector3(p[0]/w*2-1,1-p[1]/h*2,z).applyMatrix4(inverse);
-  const displacement=world(offset.a,a.z).sub(new THREE.Vector3(...d.p1));
+  let displacement=world(offset.a,a.z).sub(new THREE.Vector3(...d.p1));
   const sa=screen(a),sb=screen(b),dx=sb[0]-sa[0],dy=sb[1]-sa[1];
+  if(d.reference_plane&&!['dia','rad','angle'].includes(d.type||'')){
+    const origin=new THREE.Vector3(...d.p1);
+    const inPlane=new THREE.Vector3(...d.reference_plane.normal).cross(new THREE.Vector3(...d.p2).sub(origin)).normalize();
+    const projected=screen(origin.clone().add(inPlane).applyMatrix4(matrix));
+    const ux=projected[0]-sa[0],uy=projected[1]-sa[1],det=dx*uy-dy*ux;
+    if(inPlane.lengthSq()>.9&&Math.abs(det)>1e-3){
+      const distance=(dx*(label[1]-sa[1])-dy*(label[0]-sa[0]))/det;
+      displacement=inPlane.multiplyScalar(distance);
+    }
+  }
   const t=((label[0]-sa[0])*dx+(label[1]-sa[1])*dy)/(dx*dx+dy*dy||1);
-  const labelWorld=['dia','rad','angle'].includes(d.type||'')?world(label,(a.z+b.z)/2):new THREE.Vector3(...d.p1).lerp(new THREE.Vector3(...d.p2),t).add(displacement);
+  const labelWorld=d.reference_plane||['dia','rad','angle'].includes(d.type||'')?world(label,(a.z+b.z)/2):new THREE.Vector3(...d.p1).lerp(new THREE.Vector3(...d.p2),t).add(displacement);
   return {offset:displacement.toArray(),label:labelWorld.toArray()};
 }

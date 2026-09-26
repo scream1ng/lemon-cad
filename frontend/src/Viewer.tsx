@@ -1,9 +1,9 @@
 import {useEffect, useRef, useImperativeHandle, forwardRef} from 'react';
 import * as THREE from 'three';
 import {TrackballControls} from 'three/addons/controls/TrackballControls.js';
-import {cylinderRims, pickCadFace, type Rim} from './picking';
-import {dimensionClick,offsetDimension,type Point2,type Placement} from './dimensionPlacement';
-import {pickEdge,type CadEdge} from './edgePicking';
+import {cylinderRims, pickCadEntity, type Rim} from './picking';
+import {dimensionClick,cursorLabelPosition,offsetDimension,anchorDimension,visiblePlanarDimension,type Point2,type Placement} from './dimensionPlacement';
+import type {CadEdge} from './edgePicking';
 import {STLLoader} from 'three/addons/loaders/STLLoader.js';
 import {PDFDocument, StandardFonts, rgb} from 'pdf-lib';
 import type {MeasureFeature} from './quickMeasure';
@@ -85,6 +85,14 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     const ray = new THREE.Raycaster(); let down=[0,0];
     let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null;
     function placement(position:number[]):Placement{return {position,matrix:new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).toArray(),viewport:[container.clientWidth,container.clientHeight]};}
+    function previewPoint(position:Point2):Point2{
+      const preview=current.current.preview;if(!preview)return position;
+      const ratio=renderer.getPixelRatio(),c=overlay.getContext('2d')!;
+      c.font=`600 ${12*ratio}px monospace`;
+      const width=c.measureText(dimensionValue(preview,current.current.unit)).width+16*ratio;
+      const center=cursorLabelPosition(position,overlay.width,overlay.height,width,ratio);
+      return [center[0]/overlay.width,center[1]/overlay.height];
+    }
     function pointerDown(e: PointerEvent) {down=[e.clientX,e.clientY];controls.handleResize();
       const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
       dragLabel=(!current.current.preview&&!current.current.pending?labelBoxes:[]).find(b=>x>=b.x&&x<=b.x+b.width&&y>=b.y-20&&y<=b.y+8)?.id||null;
@@ -94,7 +102,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(!mesh)return;
       const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;if(y<0)return;
       ray.setFromCamera(new THREE.Vector2(x/rect.width*2-1,-y/viewHeight*2+1),camera);
-      return pickEdge(ray,mesh,cadEdges,camera,rect.width,viewHeight,x,y)||pickCadFace(ray,mesh,ids,rims,camera,rect.width,viewHeight,x,y);
+      return pickCadEntity(ray,mesh,ids,rims,cadEdges,faceMetadata,camera,rect.width,viewHeight,x,y);
     }
     function pointerUp(e: PointerEvent) {
       if(dragLabel){dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
@@ -102,7 +110,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(e.button!==0||!mesh||!current.current.measuring)return;
       const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
       const hit=hitAt(e),action=dimensionClick(!!hit,current.current.selected.length,!!current.current.preview||current.current.pending,Math.hypot(e.clientX-down[0],e.clientY-down[1])>5);
-      if(action==='place')current.current.onPlace(placement(pointer));
+      if(action==='place')current.current.onPlace(placement(previewPoint(pointer)));
       else if(action==='select'&&hit)current.current.onPick(hit.id,hit.point);
     }
     function keyDown(e:KeyboardEvent){
@@ -111,7 +119,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
         e.preventDefault();const index=faceMetadata.findIndex(f=>f.id===hovered),step=e.key==='ArrowRight'?1:-1;
         hovered=faceMetadata[(index+step+faceMetadata.length)%faceMetadata.length].id;render();
-      }else if(e.key==='Enter'&&current.current.preview&&pointer){e.preventDefault();current.current.onPlace(placement(pointer));
+      }else if(e.key==='Enter'&&current.current.preview&&pointer){e.preventDefault();current.current.onPlace(placement(previewPoint(pointer)));
       }else if(e.key==='Enter'&&hovered&&!current.current.preview){e.preventDefault();const f=faceMetadata.find(f=>f.id===hovered);current.current.onPick(hovered,f.centroid);}
     }
     container.addEventListener('keydown',keyDown);
@@ -151,13 +159,14 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       for(const e of cadEdges.filter(e=>hovered===-e.id||current.current.selected.includes(-e.id))){
         c.strokeStyle='#A68E05';c.lineWidth=3*ratio;c.beginPath();e.points.forEach((p,i)=>{const v=project(p);if(i)c.lineTo(v[0],v[1]);else c.moveTo(v[0],v[1]);});c.stroke();
       }
-      if(current.current.labels) [...current.current.dimensions,...(current.current.preview?[current.current.preview]:[])].forEach((d,i)=>{
+      [...(current.current.labels?current.current.dimensions:[]),...(current.current.preview?[current.current.preview]:[])].forEach((d,i)=>{
         const [a,b]=[d.p1,d.p2].map(project);
+        if(d.reference_plane&&!visiblePlanarDimension(a as Point2,b as Point2,ratio))return;
         const pending=d===current.current.preview;
-        const placement=pending&&pointer?pointer:d.labelPosition;
+        const labelPlacement=pending&&pointer?pointer:d.labelPosition;
         const label=dimensionValue(d,current.current.unit);c.font=`600 ${12*ratio}px monospace`;
         const width=c.measureText(label).width+16*ratio;
-        const labelCenter:Point2=!pending&&d.annotation?project(d.annotation.label) as Point2:[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,placement?placement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,placement?placement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
+        const labelCenter:Point2=pending&&pointer?cursorLabelPosition(pointer,overlay.width,overlay.height,width,ratio):!pending&&d.annotation?project(d.annotation.label) as Point2:[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,labelPlacement?labelPlacement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,labelPlacement?labelPlacement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
         const x=labelCenter[0]-width/2,y=labelCenter[1];
         if(!pending)labelBoxes.push({id:d.id,x:x/ratio,y:y/ratio,width:width/ratio});
         c.lineWidth=1.2*ratio;c.strokeStyle=pending?'#A68E05':'#52633D';
@@ -167,9 +176,11 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
         if(d.type==='dia'||d.type==='rad'||d.type==='angle'){
           line(a,b);arrow(a,b);arrow(b,a);line([(a[0]+b[0])/2,(a[1]+b[1])/2],labelCenter);
         }else{
-          const offset=!pending&&d.annotation?{a:project(d.p1.map((v,i)=>v+d.annotation!.offset[i])) as Point2,b:project(d.p2.map((v,i)=>v+d.annotation!.offset[i])) as Point2}:offsetDimension(a as Point2,b as Point2,labelCenter);
+          const annotation=pending&&d.reference_plane&&pointer?anchorDimension(d,placement(previewPoint(pointer))):d.annotation;
+          const offset=annotation?{a:project(d.p1.map((v,i)=>v+annotation.offset[i])) as Point2,b:project(d.p2.map((v,i)=>v+annotation.offset[i])) as Point2}:offsetDimension(a as Point2,b as Point2,labelCenter);
           line(a,offset.a);line(b,offset.b);line(offset.a,offset.b);arrow(offset.a,offset.b);arrow(offset.b,offset.a);
-          line(offset.a,labelCenter);line(offset.b,labelCenter);
+          if(d.reference_plane)line([(offset.a[0]+offset.b[0])/2,(offset.a[1]+offset.b[1])/2],labelCenter);
+          else {line(offset.a,labelCenter);line(offset.b,labelCenter);}
         }
         c.stroke();
         for(const p of [a,b]){c.beginPath();line([p[0]-3*ratio,p[1]],[p[0]+3*ratio,p[1]]);line([p[0],p[1]-3*ratio],[p[0],p[1]+3*ratio]);c.stroke();}

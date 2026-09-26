@@ -3,6 +3,13 @@ type Measurement=Omit<Dimension,'id'|'label'> & {label?:string};
 export type MeasureFeature={type:string;center?:number[];axis?:number[];radius?:number;axial?:boolean;a?:number[];b?:number[];single?:Measurement};
 const dot=(a:number[],b:number[])=>a.reduce((s,v,i)=>s+v*b[i],0);
 const sub=(a:number[],b:number[])=>a.map((v,i)=>v-b[i]);
+export function withReferencePlane(d:Dimension,features:Record<string,MeasureFeature>):Dimension{
+  if(d.reference_plane||d.entities?.length!==2||['dia','rad','angle'].includes(d.type||''))return d;
+  const circle=d.entities.map(e=>features[String(e.kind==='edge'?-e.id:e.id)]).find(f=>f?.type==='circle'&&f.axis);
+  if(!circle)return d;
+  const span=sub(d.p2,d.p1),length=Math.hypot(...span);
+  return length>1e-6&&Math.abs(dot(span,circle.axis!))<length*1e-5?{...d,reference_plane:{origin:d.p1,normal:circle.axis!}}:d;
+}
 export function quickMeasure(features:Record<string,MeasureFeature>,selection:number[],relation='centre'):Measurement|null{
   const refs=selection.map(id=>({kind:id<0?'edge':'face',id:Math.abs(id)}));
   const found=selection.map(id=>features[String(id)]);
@@ -32,5 +39,5 @@ export function quickMeasure(features:Record<string,MeasureFeature>,selection:nu
     if(b.type==='circle')p2=target.map((v,i)=>v-direction[i]*b.radius!);
     label='Nearest wall clearance';
   }
-  return {label,p1,p2,value_mm:Math.hypot(...sub(p1,p2)),method:label.toLowerCase(),entities:refs,relation,alternatives:['centre','clearance'],basis:'STEP geometry · nominal'};
+  return {label,p1,p2,value_mm:Math.hypot(...sub(p1,p2)),method:label.toLowerCase(),entities:refs,relation,alternatives:['centre','clearance'],reference_plane:{origin:c,normal:n},basis:'STEP geometry · nominal'};
 }

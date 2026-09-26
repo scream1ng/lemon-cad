@@ -1,9 +1,8 @@
 """Explicit reference measurements on the source STEP topology."""
 import math
-from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
-from OCP.GeomAbs import GeomAbs_Circle, GeomAbs_Cylinder, GeomAbs_Line
+from OCP.BRepAdaptor import BRepAdaptor_Curve
 from OCP.TopoDS import TopoDS
-from cad.icl import _sub_shape, _face, _cylinder_center, _face_map, _edge_map, measure, measure_single
+from cad.icl import _sub_shape, _face, _cylinder_center, _cylinder_geometry, _edge_geometry, _face_map, _edge_map, measure, measure_single
 
 
 def xyz(p):
@@ -26,18 +25,19 @@ def feature(shape, ref):
     part = _sub_shape(shape, kind, index)
     if kind == 'face':
         face = _face(part)
-        if BRepAdaptor_Surface(face).GetType() == GeomAbs_Cylinder:
+        if _cylinder_geometry(face):
             center, axis, radius = _cylinder_center(face)
             return {'type': 'circle', 'center': center, 'axis': axis, 'radius': radius, 'axial': True}
         return {'type': 'face'}
     curve = BRepAdaptor_Curve(TopoDS.Edge_s(part))
     a, b = xyz(curve.Value(curve.FirstParameter())), xyz(curve.Value(curve.LastParameter()))
-    if curve.GetType() == GeomAbs_Circle:
-        circle = curve.Circle()
+    geometry = _edge_geometry(TopoDS.Edge_s(part))
+    if geometry and geometry[0] == 'circle':
+        circle = geometry[1]
         return {'type': 'circle', 'center': xyz(circle.Location()), 'axis': xyz(circle.Axis().Direction()), 'radius': circle.Radius(), 'axial': False,
-                'full': abs(curve.LastParameter()-curve.FirstParameter()-2*math.pi) < 1e-5}
-    if curve.GetType() == GeomAbs_Line:
-        return {'type': 'line', 'a': a, 'b': b, 'axis': xyz(curve.Line().Direction())}
+                'full': curve.IsClosed() or abs(curve.LastParameter()-curve.FirstParameter()-2*math.pi) < 1e-5}
+    if geometry and geometry[0] == 'line':
+        return {'type': 'line', 'a': a, 'b': b, 'axis': xyz(geometry[1].Direction())}
     return {'type': 'curve'}
 
 
