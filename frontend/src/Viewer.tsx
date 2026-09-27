@@ -1,24 +1,33 @@
+import {viewportFrustum,visibleLabelCenter} from './viewportFit';
 import {useEffect, useRef, useImperativeHandle, forwardRef} from 'react';
 import * as THREE from 'three';
 import {TrackballControls} from 'three/addons/controls/TrackballControls.js';
-import {cylinderRims, pickCadEntity, type Rim} from './picking';
+import {cylinderRims, pickCadEntity, pickSketchFace, type Rim} from './picking';
 import {dimensionClick,cursorLabelPosition,offsetDimension,anchorDimension,visiblePlanarDimension,type Point2,type Placement} from './dimensionPlacement';
-import type {CadEdge} from './edgePicking';
+import {pickEdge,type CadEdge} from './edgePicking';
 import {STLLoader} from 'three/addons/loaders/STLLoader.js';
 import {PDFDocument, StandardFonts, rgb} from 'pdf-lib';
+import type {SketchFrame} from './cadDocument';
+import {planeEdge,type PlaneEdge,type SketchView} from './sketchGeometry';
 import type {MeasureFeature} from './quickMeasure';
 import {fileURL, dimensionValue, type Model, type Dimension} from './api';
 
-export type ViewerHandle = {focus: () => void; fit: (view?: string) => void; camera: () => any; export: (format: 'png'|'pdf') => Promise<void>};
-type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
+export type ViewerHandle = {pickSketchEdge:(x:number,y:number,frame:SketchFrame)=>PlaneEdge|null;sketchView: () => SketchView|null; panSketch:(dx:number,dy:number)=>void; zoomSketch:(factor:number)=>void; focus: () => void; fit: (view?: string) => void; camera: () => any; normalTo: (frame:SketchFrame) => void; restoreCamera: (camera:any) => boolean; export: (format: 'png'|'pdf') => Promise<void>};
+type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; selecting?:boolean; onSelectFace?:(selection:{id:number;point:number[]}|null)=>void; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
 function download(blob: Blob, name: string) {const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);}
 
 export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref) {
   const host = useRef<HTMLDivElement>(null), current = useRef(props), runtime = useRef<any>(null);
   current.current = props;
   useImperativeHandle(ref, () => ({
+    pickSketchEdge(x,y,frame) {return runtime.current?.pickSketchEdge(x,y,frame)??null;},
+    sketchView() {const r=runtime.current;if(!r?.ready)return null;return {matrix:new THREE.Matrix4().multiplyMatrices(r.camera.projectionMatrix,r.camera.matrixWorldInverse).toArray(),width:host.current!.clientWidth,height:host.current!.clientHeight};},
+    panSketch(dx,dy) {const r=runtime.current;if(!r?.ready)return;const c=r.camera,w=host.current!.clientWidth,h=host.current!.clientHeight;const shift=new THREE.Vector3().setFromMatrixColumn(c.matrixWorld,0).multiplyScalar(-dx*(c.right-c.left)/c.zoom/w).addScaledVector(new THREE.Vector3().setFromMatrixColumn(c.matrixWorld,1),dy*(c.top-c.bottom)/c.zoom/h);c.position.add(shift);r.controls.target.add(shift);r.controls.update();r.render();},
+    zoomSketch(factor) {const r=runtime.current;if(!r?.ready)return;r.camera.zoom=Math.max(.01,Math.min(100,r.camera.zoom*factor));r.camera.updateProjectionMatrix();r.render();},
     focus() {host.current?.focus();},
     fit(view) {runtime.current?.fit(view);},
+    normalTo(frame) {runtime.current?.normalTo(frame);},
+    restoreCamera(saved) {const r=runtime.current;if(!r?.ready||!saved)return false;r.camera.position.fromArray(saved.position);r.camera.up.fromArray(saved.up||[0,0,1]);r.controls.target.fromArray(saved.target);r.camera.zoom=saved.zoom;r.camera.updateProjectionMatrix();r.controls.update();r.render();return true;},
     camera() {const r = runtime.current; return r ? {position:r.camera.position.toArray(), target:r.controls.target.toArray(), zoom:r.camera.zoom,up:r.camera.up.toArray()} : null;},
     async export(format) {
       const r = runtime.current;
@@ -47,7 +56,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       download(new Blob([new Uint8Array(await pdf.save())],{type:'application/pdf'}),p.model.name+'.pdf');
     }
   }),[]);
-  useEffect(() => {runtime.current?.render();},[props.dimensions,props.preview,props.selected,props.unit,props.wire,props.labels,props.measuring]);
+  useEffect(() => {runtime.current?.render();},[props.dimensions,props.preview,props.selected,props.unit,props.wire,props.labels,props.measuring,props.selecting]);
   useEffect(()=>{if(props.measuring)host.current?.focus();},[props.measuring]);
   useEffect(() => {
     const container = host.current!;
@@ -74,11 +83,17 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       camera.up.set(0,view==='top'?1:0,view==='top'?0:1);
       camera.position.copy(center).addScaledVector(dir,extent*3); camera.zoom=1; controls.target.copy(center); resize(); controls.update();viewQuaternion=camera.quaternion.clone();current.current.onViewChange(view);
     }
+    function normalTo(frame:SketchFrame){
+      if(!mesh)return;
+      const normal=new THREE.Vector3(...frame.u).cross(new THREE.Vector3(...frame.v));
+      camera.up.fromArray(frame.v);camera.position.copy(center).addScaledVector(normal,extent*3);
+      controls.target.copy(center);camera.zoom=1;resize();controls.update();viewQuaternion=null;current.current.onViewChange(null);
+    }
     function resize() {
       const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight);
       renderer.setSize(w,h); overlay.width=renderer.domElement.width; overlay.height=renderer.domElement.height;
       viewHeight=h;
-      const aspect=w/viewHeight; camera.left=-extent*.6*aspect;camera.right=extent*.6*aspect;camera.top=extent*.6;camera.bottom=-extent*.6;
+      Object.assign(camera,viewportFrustum(extent,w,viewHeight));
       camera.near=Math.max(extent/10000,0.001);camera.far=extent*1000;camera.updateProjectionMatrix(); controls.handleResize(); render();
     }
     const observer = new ResizeObserver(resize); observer.observe(container);
@@ -102,25 +117,30 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(!mesh)return;
       const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;if(y<0)return;
       ray.setFromCamera(new THREE.Vector2(x/rect.width*2-1,-y/viewHeight*2+1),camera);
+      if(current.current.selecting){
+        return pickSketchFace(ray,mesh,ids);
+      }
       return pickCadEntity(ray,mesh,ids,rims,cadEdges,faceMetadata,camera,rect.width,viewHeight,x,y);
     }
     function pointerUp(e: PointerEvent) {
       if(dragLabel){dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
       controls.update();
-      if(e.button!==0||!mesh||!current.current.measuring)return;
+      if(e.button!==0||!mesh)return;
+      if(current.current.selecting){if(Math.hypot(e.clientX-down[0],e.clientY-down[1])<=5)current.current.onSelectFace?.(hitAt(e)||null);return;}
+      if(!current.current.measuring)return;
       const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
       const hit=hitAt(e),action=dimensionClick(!!hit,current.current.selected.length,!!current.current.preview||current.current.pending,Math.hypot(e.clientX-down[0],e.clientY-down[1])>5);
       if(action==='place')current.current.onPlace(placement(previewPoint(pointer)));
       else if(action==='select'&&hit)current.current.onPick(hit.id,hit.point);
     }
     function keyDown(e:KeyboardEvent){
-      if(!current.current.measuring)return;
+      if(!current.current.measuring&&!current.current.selecting)return;
       if(!faceMetadata.length)return;
       if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
         e.preventDefault();const index=faceMetadata.findIndex(f=>f.id===hovered),step=e.key==='ArrowRight'?1:-1;
         hovered=faceMetadata[(index+step+faceMetadata.length)%faceMetadata.length].id;render();
       }else if(e.key==='Enter'&&current.current.preview&&pointer){e.preventDefault();current.current.onPlace(placement(previewPoint(pointer)));
-      }else if(e.key==='Enter'&&hovered&&!current.current.preview){e.preventDefault();const f=faceMetadata.find(f=>f.id===hovered);current.current.onPick(hovered,f.centroid);}
+      }else if(e.key==='Enter'&&hovered&&!current.current.preview){e.preventDefault();const f=faceMetadata.find(f=>f.id===hovered);if(current.current.selecting)current.current.onSelectFace?.({id:hovered,point:f.centroid});else current.current.onPick(hovered,f.centroid);}
     }
     container.addEventListener('keydown',keyDown);
     renderer.domElement.addEventListener('pointerdown',pointerDown,true);renderer.domElement.addEventListener('pointerup',pointerUp);
@@ -129,12 +149,12 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
       if(dragLabel){const rect=container.getBoundingClientRect();current.current.onLabelMove(dragLabel,placement([(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height]));return;}
       controls.update();
-      if(!mesh||!current.current.measuring){hovered=0;return;}
+      if(!mesh||(!current.current.measuring&&!current.current.selecting)){hovered=0;return;}
       const hit=hitAt(e);hovered=hit?.id||0;container.style.cursor=hit||current.current.preview||current.current.pending?'crosshair':'grab';render();
     }
     renderer.domElement.addEventListener('pointermove',pointerMove);renderer.domElement.addEventListener('pointerleave',()=>{hovered=0;render();});
     function render() {
-      if(!current.current.measuring)hovered=0;
+      if(!current.current.measuring&&!current.current.selecting)hovered=0;
       if (mesh) {
         const selected=current.current.selected.join(',')+':'+hovered;
         if (selected!==previousSelection && geometry) {
@@ -166,7 +186,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
         const labelPlacement=pending&&pointer?pointer:d.labelPosition;
         const label=dimensionValue(d,current.current.unit);c.font=`600 ${12*ratio}px monospace`;
         const width=c.measureText(label).width+16*ratio;
-        const labelCenter:Point2=pending&&pointer?cursorLabelPosition(pointer,overlay.width,overlay.height,width,ratio):!pending&&d.annotation?project(d.annotation.label) as Point2:[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,labelPlacement?labelPlacement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,labelPlacement?labelPlacement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
+        const labelCenter:Point2=pending&&pointer?cursorLabelPosition(pointer,overlay.width,overlay.height,width,ratio):!pending&&d.annotation?visibleLabelCenter(project(d.annotation.label) as Point2,overlay.width,overlay.height,width,ratio):[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,labelPlacement?labelPlacement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,labelPlacement?labelPlacement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
         const x=labelCenter[0]-width/2,y=labelCenter[1];
         if(!pending)labelBoxes.push({id:d.id,x:x/ratio,y:y/ratio,width:width/ratio});
         c.lineWidth=1.2*ratio;c.strokeStyle=pending?'#A68E05':'#52633D';
@@ -189,7 +209,14 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       });
     }
     controls.addEventListener('change',()=>{if(viewQuaternion&&1-Math.abs(camera.quaternion.dot(viewQuaternion))>1e-8){viewQuaternion=null;current.current.onViewChange(null);}render();});
-    runtime.current={camera,controls,renderer,overlay,fit,render,ready:false};
+    function pickSketchEdge(x:number,y:number,frame:SketchFrame):PlaneEdge|null{
+      if(!mesh)return null;
+      const eligible=cadEdges.filter(e=>planeEdge(e,frame));
+      const hit=pickEdge(ray,mesh,eligible,camera,container.clientWidth,container.clientHeight,x,y);
+      const found=hit&&eligible.find(e=>e.id===-hit.id);
+      return found?planeEdge(found,frame):null;
+    }
+    runtime.current={pickSketchEdge,camera,controls,renderer,overlay,fit,normalTo,render,ready:false};
     async function load() {
       let faces: any[]=[],measureFeatures:Record<string,MeasureFeature>={};
       if(current.current.model.format==='stl') {
@@ -217,5 +244,5 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     function animate(){if(stopped)return;controls.update();render();frame=requestAnimationFrame(animate);}animate();
     return()=>{stopped=true;abort.abort();cancelAnimationFrame(frame);observer.disconnect();container.removeEventListener('keydown',keyDown);controls.dispose();geometry?.dispose();if(mesh)(mesh.material as THREE.Material).dispose();if(edge){edge.geometry.dispose();(edge.material as THREE.Material).dispose();}renderer.dispose();container.replaceChildren();runtime.current=null;};
   },[props.model.file_id,props.stlUnit]);
-  return <div className="canvas-host" ref={host} tabIndex={0} role="application" aria-label={`Interactive model of ${props.model.name}. Drag to orbit, scroll to zoom. Click a hole then an edge for centre distance. Move the mouse and click empty space to place the dimension. Drag to rotate. Keyboard: left and right arrows highlight faces; Enter selects; Escape clears selection.`}/>;
+  return <div className="canvas-host" ref={host} tabIndex={0} role="application" aria-label={`Interactive model of ${props.model.name}. Drag to orbit, scroll to zoom. ${props.selecting?'Click a planar face to sketch.':'Click a hole then an edge for centre distance.'} Move the mouse and click empty space to place the dimension. Drag to rotate. Keyboard: left and right arrows highlight faces; Enter selects; Escape clears selection.`}/>;
 });

@@ -19,5 +19,5 @@ export async function waitJob(id: string, signal?: AbortSignal) {
   }
 }
 export type Dimension = {annotation?:{offset:number[];label:number[]};reference_plane?:{origin:number[];normal:number[]};entities?:{kind:string;id:number}[];relation?:string;alternatives?:string[];labelPosition?:number[];id: string; label: string; value_mm: number; type?: string; p1: number[]; p2: number[]; basis: string; method?: string; faces?: number[]};
-export type Model = {file_id: string; name: string; format: string; result: any; state?: any; project?: any; editable?: boolean};
+export type Model = {file_id: string; name: string; format: string; result: any; state?: any; project?: any; editable?: boolean; dirty?:boolean};
 export function dimensionValue(d: Dimension, unit: string) {return `${d.type === 'dia' ? 'Ø' : d.type === 'rad' ? 'R' : ''}${(d.value_mm / (d.type === 'angle' || unit === 'mm' ? 1 : 25.4)).toFixed(2)} ${d.type === 'angle' ? '°' : unit}`;}

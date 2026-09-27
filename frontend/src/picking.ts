@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import {pickEdge,type CadEdge} from './edgePicking.ts';
 
+export function pickSketchFace(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[]){
+  const hit=ray.intersectObject(mesh)[0];
+  return hit&&hit.faceIndex!=null&&ids[hit.faceIndex]?{id:ids[hit.faceIndex],point:hit.point.toArray()}:undefined;
+}
+
 // Normalize signed zero as well as tessellation noise at a closed cylinder seam.
 const vertexKey=(p:THREE.Vector3)=>p.toArray().map(v=>Math.round(v*10000)).join(',');
 

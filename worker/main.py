@@ -70,7 +70,7 @@ def run(job_id):
                 path = root / item['path']
                 data, key = path.read_bytes(), uid()
                 storage.put(key, data)
-                artifact_file = File(owner_id=job.owner_id, anonymous_session_hash=job.anonymous_session_hash, name=path.name, format=path.suffix[1:], size=len(data), sha256=hashlib.sha256(data).hexdigest(), storage_key=key, expires_at=file.expires_at if file else None)
+                artifact_file = File(owner_id=job.owner_id, anonymous_session_hash=job.anonymous_session_hash, name=path.name, format=path.suffix[1:], size=len(data), sha256=hashlib.sha256(data).hexdigest(), storage_key=key, expires_at=file.expires_at if file else now() + timedelta(hours=24) if job.type == 'cad' else None)
                 db.add(artifact_file)
                 db.flush()
                 db.add(Artifact(job_id=job.id, file_id=artifact_file.id, kind=item['kind'], revision_hash=result['revision_hash']))

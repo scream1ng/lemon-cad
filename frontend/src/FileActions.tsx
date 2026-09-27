@@ -1,9 +1,9 @@
 import {useEffect,useRef,useState} from 'react';
 import {ChevronDown,Download,Share2} from 'lucide-react';
 
-type Props={busy:boolean;onExport:(format:'png'|'pdf')=>void;onShare?:()=>void};
+type Props={source?:string;busy:boolean;onExport:(format:'png'|'pdf')=>void;onShare?:()=>void};
 
-export function FileActions({busy,onExport,onShare}:Props){
+export function FileActions({busy,onExport,onShare,source}:Props){
   const [open,setOpen]=useState(false);
   const root=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null);
   useEffect(()=>{
@@ -23,8 +23,9 @@ export function FileActions({busy,onExport,onShare}:Props){
     const next=event.key==='Home'?0:event.key==='End'?items.length-1:(current+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;
     items[next]?.focus();
   }}>
-    <button className="button" ref={trigger} aria-haspopup="menu" aria-expanded={open} aria-controls="cad-file-menu" disabled={busy} onClick={()=>setOpen(!open)} onKeyDown={event=>{if(!open&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);}}}>File<ChevronDown size={14}/></button>
+    <button className="button" ref={trigger} aria-haspopup="menu" aria-expanded={open} aria-controls="cad-file-menu" disabled={busy} onClick={()=>setOpen(!open)} onKeyDown={event=>{if(!open&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);}}}>Export<ChevronDown size={14}/></button>
     {open&&<div className="file-menu" id="cad-file-menu" role="menu" aria-label="File actions">
+      {source&&<a role="menuitem" className="file-source-link" href={source} download onClick={()=>setOpen(false)}><Download size={15}/>Download CAD file</a>}
       <button role="menuitem" onClick={()=>choose(()=>onExport('png'))}><Download size={15}/>Export PNG</button>
       <button role="menuitem" onClick={()=>choose(()=>onExport('pdf'))}><Download size={15}/>Export PDF</button>
       {onShare&&<button role="menuitem" onClick={()=>choose(onShare)}><Share2 size={15}/>Share folder</button>}

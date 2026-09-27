@@ -323,6 +323,33 @@ def _cylinder_faces(shape, fmap=None):
     return found
 
 
+def planar_frame(face):
+    surf = BRepAdaptor_Surface(face)
+    if surf.GetType() != GeomAbs_Plane:
+        raise ValueError('Select a planar face. Curved surfaces need a datum-plane sketch.')
+    plane = surf.Plane()
+    n = list(plane.Axis().Direction().Coord())
+    if face.Orientation() == TopAbs_REVERSED:
+        n = [-value for value in n]
+    center, location = _centroid(face), plane.Location().Coord()
+    distance = sum((center[k]-location[k])*n[k] for k in range(3))
+    origin = [center[k]-distance*n[k] for k in range(3)]
+    reference = [1,0,0] if abs(n[0]) < .9 else [0,1,0]
+    projection = sum(a*b for a,b in zip(reference,n))
+    u = [reference[k]-projection*n[k] for k in range(3)]
+    length = math.sqrt(sum(value*value for value in u))
+    u = [value/length for value in u]
+    v = [n[1]*u[2]-n[2]*u[1],n[2]*u[0]-n[0]*u[2],n[0]*u[1]-n[1]*u[0]]
+    return {'origin':origin,'u':u,'v':v}
+
+
+def face_sketch_plane(shape, face_id):
+    faces = _face_map(shape)
+    if face_id < 1 or face_id > faces.Extent():
+        raise ValueError('Face is unavailable. Select a face on the current model.')
+    return planar_frame(_face(faces.FindKey(face_id)))
+
+
 def _face_meta(face, idx: int, cylinders=None) -> dict:
     surf = BRepAdaptor_Surface(face)
     t = surf.GetType()
@@ -339,6 +366,7 @@ def _face_meta(face, idx: int, cylinders=None) -> dict:
         if face.Orientation() == TopAbs_REVERSED:
             n = [-v for v in n]
         meta["normal"] = [round(v, 5) for v in n]
+        meta['plane_frame'] = planar_frame(face)
     elif idx in (cylinders or {}) or t == GeomAbs_Cylinder:
         meta["type"] = "cylinder"
         info = cylinders[idx] if cylinders else None
@@ -481,17 +509,18 @@ def indexed_edges(shape) -> list:
             disc.Initialize(curve, 0.3, 0.04)
             if disc.NbPoints() < 2:
                 continue
+            curve_type = (_edge_geometry(edge) or ("curve", None))[0]
             pts = []
             for j in range(1, disc.NbPoints() + 1):
                 p = disc.Value(j)
                 if finite(p.X()) and finite(p.Y()) and finite(p.Z()):
-                    pts.append([round(p.X(), 3), round(p.Y(), 3), round(p.Z(), 3)])
+                    pts.append([p.X(), p.Y(), p.Z()] if curve_type == "line" else [round(p.X(), 3), round(p.Y(), 3), round(p.Z(), 3)])
             if len(pts) < 2:
                 continue
             out.append(
                 {
                     "id": i,
-                    "type": (_edge_geometry(edge) or ("curve", None))[0],
+                    "type": curve_type,
                     "points": pts,
                 }
             )

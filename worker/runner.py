@@ -9,6 +9,16 @@ sys.path.insert(0, str(ROOT))
 
 
 def execute(kind, payload, source, out):
+    if kind == 'cad':
+        from cad.authoring import rebuild, write_step, volume
+        shape, document = rebuild(payload['document'])
+        step = out / 'part.step'
+        write_step(shape, step)
+        result = execute('import', {}, step, out)
+        result['cad_document'] = document
+        result['volume_mm3'] = volume(shape)
+        result['artifacts'].append({'path': 'part.step', 'kind': 'cad_step'})
+        return result
     if kind == 'import':
         if source.suffix == '.stl':
             # Validate basic STL framing here; browser performs the mesh decode.
@@ -40,6 +50,10 @@ def execute(kind, payload, source, out):
             raise ValueError('No mesh generated, or model exceeds the two million triangle limit.')
         (out / 'mesh.json').write_text(json.dumps(result, allow_nan=False))
         return {'face_count': result['face_count'], 'artifacts': [{'path': 'mesh.json', 'kind': 'mesh'}]}
+    if kind == 'face_plane':
+        from cad.loader import load_step
+        from cad.icl import face_sketch_plane
+        return {'frame': face_sketch_plane(load_step(str(source)), payload['face_id'])}
     if kind == 'measure':
         from cad.loader import load_step
         from cad.smart_measure import smart_measure
