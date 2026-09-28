@@ -55,7 +55,8 @@ export function pickCadFace(ray:THREE.Raycaster, mesh:THREE.Mesh, ids:number[], 
 export function pickCadEntity(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[],rims:Rim[],edges:CadEdge[],camera:THREE.Camera,width:number,height:number,x:number,y:number,preferEdge=false){
   const face=pickCadFace(ray,mesh,ids,rims,camera,width,height,x,y);
   if(preferEdge)return pickEdge(ray,mesh,edges,camera,width,height,x,y)||face;
-  return face||pickEdge(ray,mesh,edges,camera,width,height,x,y);
+  // A straight edge directly under the cursor beats the faces on either side of it.
+  return pickEdge(ray,mesh,edges,camera,width,height,x,y,4,['line'])||face||pickEdge(ray,mesh,edges,camera,width,height,x,y);
 }
 
 type RimLoop={faceId:number;points:THREE.Vector3[];plane:THREE.Plane};

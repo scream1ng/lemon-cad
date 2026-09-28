@@ -169,7 +169,8 @@ function App() {
     if(!model)return;const version=++measureVersion.current;setPreview(null);setMeasurePending(true);setError('');
     try{
       const entities=selection.map(id=>({kind:id<0?'edge':'face',id:Math.abs(id)}));
-      let result=quickMeasure(measureFeatures.current,selection,relation);
+      const camera=viewer.current?.camera(),view=camera&&camera.target.map((v:number,i:number)=>v-camera.position[i]);
+      let result=quickMeasure(measureFeatures.current,selection,relation,view);
       if(!result){const job=await api('/measure','POST',{file_id:model.file_id,entities,relation});result=await waitJob(job.id);}
       if(version!==measureVersion.current)return;
       if(!result)throw new Error('Measurement unavailable.');

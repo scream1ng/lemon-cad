@@ -9,7 +9,7 @@ export function defaultMeasureRelation(features:Record<string,MeasureFeature>,fa
   if(circle===undefined)return 'centre';
   const other=selection.find(id=>id!==circle)!;
   const cylinder=circle>0&&faces.some(f=>f.id===circle&&f.type==='cylinder');
-  return features[String(other)]?.type==='line'||cylinder&&other>0&&faces.some(f=>f.id===other&&f.type==='plane')?'clearance':'centre';
+  return cylinder&&other>0&&faces.some(f=>f.id===other&&f.type==='plane')?'clearance':'centre';
 }
 export function withReferencePlane(d:Dimension,features:Record<string,MeasureFeature>):Dimension{
   if(d.reference_plane||d.entities?.length!==2||['dia','rad','angle'].includes(d.type||''))return d;
@@ -18,13 +18,25 @@ export function withReferencePlane(d:Dimension,features:Record<string,MeasureFea
   const span=sub(d.p2,d.p1),length=Math.hypot(...span);
   return length>1e-6&&Math.abs(dot(span,circle.axis!))<length*1e-5?{...d,reference_plane:{origin:d.p1,normal:circle.axis!}}:d;
 }
-export function quickMeasure(features:Record<string,MeasureFeature>,selection:number[],relation='centre'):Measurement|null{
+// view: camera look direction at pick time; parallel edges are measured as seen in that view.
+export function quickMeasure(features:Record<string,MeasureFeature>,selection:number[],relation='centre',view?:number[]):Measurement|null{
   const refs=selection.map(id=>({kind:id<0?'edge':'face',id:Math.abs(id)}));
   const found=selection.map(id=>features[String(id)]);
   if(found.some(f=>!f))return null;
   if(found.length===1)return found[0].single?{...found[0].single,entities:refs}:null;
   if(found[1].type==='circle'&&found[0].type!=='circle')found.reverse();
   const [a,b]=found;
+  if(a.type==='line'&&b.type==='line'){
+    const u=sub(a.b!,a.a!),v=sub(b.b!,b.a!),lu=Math.hypot(...u),lv=Math.hypot(...v);
+    if(lu<=1e-6||lv<=1e-6||Math.abs(dot(u,v))<lu*lv*(1-1e-9))return null;
+    const p1=a.a!.map((x,i)=>(x+a.b![i])/2),t=dot(sub(p1,b.a!),v)/(lv*lv);
+    let gap=sub(b.a!.map((x,i)=>x+t*v[i]),p1);
+    const n=view&&Math.hypot(...view)>1e-9?view.map(x=>x/Math.hypot(...view)):undefined;
+    if(n){const depth=dot(gap,n);gap=gap.map((x,i)=>x-depth*n[i]);}
+    const p2=p1.map((x,i)=>x+gap[i]),value_mm=Math.hypot(...gap);
+    if(value_mm<=1e-6)throw new Error(n?'These edges line up in this view. Rotate the view and pick again.':'These edges are collinear.');
+    return {label:'Edge to edge',p1,p2,value_mm,method:'edge to edge',entities:refs,basis:'STEP geometry · nominal',...(n?{reference_plane:{origin:p1,normal:n}}:{})};
+  }
   if(a.type!=='circle'||!['circle','line'].includes(b.type))return null;
   let c=a.center!.slice();const n=a.axis!,r=a.radius!;let target:number[],radii:number,label:string;
   if(b.type==='line'){
