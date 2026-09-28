@@ -8,7 +8,7 @@ export function dimensionClick(hit:boolean, selected:number, pending:boolean, dr
 export function cursorLabelPosition(pointer:Point2,width:number,height:number,labelWidth:number,scale=1):Point2{
   const x=pointer[0]*width,y=pointer[1]*height,margin=12*scale;
   const center=Math.max(margin+labelWidth/2,Math.min(width-margin-labelWidth/2,x));
-  const topInset=(width/scale<600?120:72)*scale,above=y-40*scale;
+  const topInset=(width/scale<600?120:72)*scale,above=y-20*scale;
   const baseline=above-17*scale>=topInset?above:Math.max(y+55*scale,topInset+17*scale);
   return [center,Math.max(24*scale,Math.min(height-12*scale,baseline))];
 }
