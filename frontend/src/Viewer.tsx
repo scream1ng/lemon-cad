@@ -3,7 +3,7 @@ import {useEffect, useRef, useImperativeHandle, forwardRef} from 'react';
 import * as THREE from 'three';
 import {TrackballControls} from 'three/addons/controls/TrackballControls.js';
 import {cylinderRims, pickCadEntity, pickSketchFace, type Rim} from './picking';
-import {dimensionClick,cursorLabelPosition,offsetDimension,anchorDimension,visiblePlanarDimension,type Point2,type Placement} from './dimensionPlacement';
+import {dimensionClick,cursorLabelPosition,offsetDimension,anchorDimension,visiblePlanarDimension,projectOntoLine,calloutTip,separateLabels,type Point2,type Placement} from './dimensionPlacement';
 import {pickEdge,type CadEdge} from './edgePicking';
 import {STLLoader} from 'three/addons/loaders/STLLoader.js';
 import {PDFDocument, StandardFonts, rgb} from 'pdf-lib';
@@ -14,6 +14,7 @@ import {fileURL, dimensionValue, type Model, type Dimension} from './api';
 
 export type ViewerHandle = {pickSketchEdge:(x:number,y:number,frame:SketchFrame)=>PlaneEdge|null;sketchView: () => SketchView|null; panSketch:(dx:number,dy:number)=>void; zoomSketch:(factor:number)=>void; focus: () => void; fit: (view?: string) => void; camera: () => any; normalTo: (frame:SketchFrame) => void; restoreCamera: (camera:any) => boolean; export: (format: 'png'|'pdf') => Promise<void>};
 type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; edgePicking:boolean; selecting?:boolean; editable:boolean; onSelectFace?:(selection:{id:number;point:number[]}|null)=>void; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onLabelDelete:(id:string)=>void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
+const labelFont=(ratio:number)=>`600 ${13*ratio}px ui-sans-serif, system-ui, sans-serif`;
 function download(blob: Blob, name: string) {const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);}
 
 export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref) {
@@ -35,7 +36,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(current.current.preview)throw new Error('Place or cancel the dimension before exporting.');
       r.render();
       const p = current.current, canvas = document.createElement('canvas');
-      canvas.width = 1600; canvas.height = 1100 + p.dimensions.length * 45;
+      canvas.width = 1600; canvas.height = 1100;
       const c = canvas.getContext('2d')!;
       c.fillStyle = '#FFFEFA'; c.fillRect(0,0,canvas.width,canvas.height);
       c.fillStyle = '#29352B'; c.font = 'bold 28px sans-serif'; c.fillText('LemonCAD / ' + p.model.name.slice(0,70),40,50);
@@ -44,8 +45,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       c.drawImage(r.renderer.domElement, (1600-w)/2,85,w,h);
       c.drawImage(r.overlay, (1600-w)/2,85,w,h);
       c.font = '18px sans-serif';
-      c.fillText(p.model.format === 'stl' ? `Mesh measurements · source units ${p.stlUnit} · approximate` : 'STEP geometry measurements · displayed to two decimal places · verify suitability before manufacture',40,1030);
-      p.dimensions.forEach((d,i) => c.fillText(`${i+1}. ${d.label}   ${dimensionValue(d,p.unit)}   ${d.method || d.basis}`,40,1080+i*45));
+      c.fillText(p.model.format === 'stl' ? `Mesh measurements · source units ${p.stlUnit} · approximate` : 'STEP geometry measurements · verify suitability before manufacture',40,1030);
       if (format === 'png') {canvas.toBlob(blob => blob && download(blob, p.model.name + '.png')); return;}
       const pdf = await PDFDocument.create(), font = await pdf.embedFont(StandardFonts.Helvetica);
       const img = await pdf.embedPng(canvas.toDataURL('image/png'));
@@ -71,7 +71,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     scene.add(new THREE.HemisphereLight(0xffffff,0x77816d,2.5)); scene.add(new THREE.AmbientLight(0xffffff,0.7));
     const light = new THREE.DirectionalLight(0xffffff,3); light.position.set(100,50,200); scene.add(light);
     let mesh: THREE.Mesh | undefined, edge: THREE.LineSegments | undefined, cadLines: THREE.LineSegments | undefined, ids: number[] = [], geometry: THREE.BufferGeometry | undefined;
-    let faceMetadata:any[]=[],rims:Rim[]=[],cadEdges:CadEdge[]=[];
+    let faceMetadata:any[]=[],rims:Rim[]=[],cadEdges:CadEdge[]=[],features:Record<string,MeasureFeature>={};
     let viewHeight=1;let pointer:Point2|null=null;
     function project(p:number[]){const v=new THREE.Vector3(...p).project(camera);return [(v.x+1)*overlay.width/2,(1-v.y)*viewHeight*renderer.getPixelRatio()/2];}
     let extent=100, center=new THREE.Vector3(), stopped=false;
@@ -103,8 +103,8 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     function previewPoint(position:Point2):Point2{
       const preview=current.current.preview;if(!preview)return position;
       const ratio=renderer.getPixelRatio(),c=overlay.getContext('2d')!;
-      c.font=`600 ${12*ratio}px monospace`;
-      const width=c.measureText(dimensionValue(preview,current.current.unit)).width+16*ratio;
+      c.font=labelFont(ratio);
+      const width=c.measureText(dimensionValue(preview,current.current.unit)).width+8*ratio;
       const center=cursorLabelPosition(position,overlay.width,overlay.height,width,ratio);
       return [center[0]/overlay.width,center[1]/overlay.height];
     }
@@ -187,34 +187,68 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       for(const e of cadEdges.filter(e=>hovered===-e.id||current.current.selected.includes(-e.id))){
         c.strokeStyle='#A68E05';c.lineWidth=3*ratio;c.beginPath();e.points.forEach((p,i)=>{const v=project(p);if(i)c.lineTo(v[0],v[1]);else c.moveTo(v[0],v[1]);});c.stroke();
       }
+      const layouts:{d:Dimension;pending:boolean;width:number;center:Point2;dir:Point2;draw:(center:Point2)=>void}[]=[];
+      c.font=labelFont(ratio);
       [...(current.current.labels?current.current.dimensions:[]),...(current.current.preview?[current.current.preview]:[])].forEach((d,i)=>{
-        const [a,b]=[d.p1,d.p2].map(project);
-        if(d.reference_plane&&!visiblePlanarDimension(a as Point2,b as Point2,ratio))return;
+        const [a,b]=[d.p1,d.p2].map(project) as Point2[];
+        if(d.reference_plane&&!visiblePlanarDimension(a,b,ratio))return;
         const pending=d===current.current.preview;
         const labelPlacement=pending&&pointer?pointer:d.labelPosition;
-        const label=dimensionValue(d,current.current.unit);c.font=`600 ${12*ratio}px monospace`;
-        const width=c.measureText(label).width+16*ratio;
+        const text=dimensionValue(d,current.current.unit);
+        const width=c.measureText(text).width+8*ratio;
         const labelCenter:Point2=pending&&pointer?cursorLabelPosition(pointer,overlay.width,overlay.height,width,ratio):!pending&&d.annotation?visibleLabelCenter(project(d.annotation.label) as Point2,overlay.width,overlay.height,width,ratio):[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,labelPlacement?labelPlacement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,labelPlacement?labelPlacement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
-        const x=labelCenter[0]-width/2,y=labelCenter[1];
-        if(!pending)labelBoxes.push({id:d.id,x:x/ratio,y:y/ratio,width:width/ratio});
-        c.lineWidth=(d.id===selectedLabel?2:1.2)*ratio;c.strokeStyle=pending||d.id===selectedLabel?'#A68E05':'#52633D';
-        function line(p:number[],q:number[]){c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);}
-        function arrow(p:number[],q:number[]){const angle=Math.atan2(q[1]-p[1],q[0]-p[0]);for(const sign of [-1,1])line(p,[p[0]+8*ratio*Math.cos(angle+sign*.35),p[1]+8*ratio*Math.sin(angle+sign*.35)]);}
-        c.beginPath();
-        if(d.type==='dia'||d.type==='rad'||d.type==='angle'){
-          line(a,b);arrow(a,b);arrow(b,a);line([(a[0]+b[0])/2,(a[1]+b[1])/2],labelCenter);
+        const color=pending||d.id===selectedLabel?'#A68E05':'#52633D';
+        const stroke=(...segments:Point2[][])=>{c.lineWidth=(d.id===selectedLabel?2:1.2)*ratio;c.strokeStyle=color;c.beginPath();for(const [p,q] of segments){c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);}c.stroke();};
+        const arrow=(tip:Point2,from:Point2)=>{const angle=Math.atan2(tip[1]-from[1],tip[0]-from[0]),size=10*ratio;c.fillStyle=color;c.beginPath();c.moveTo(tip[0],tip[1]);for(const sign of [-1,1])c.lineTo(tip[0]-size*Math.cos(angle+sign*.28),tip[1]-size*Math.sin(angle+sign*.28));c.closePath();c.fill();};
+        const label=(center:Point2)=>{
+          c.textAlign='center';c.textBaseline='middle';c.lineJoin='round';
+          if(pending||d.id===selectedLabel){c.fillStyle='#FFF9CB';c.fillRect(center[0]-width/2,center[1]-10*ratio,width,20*ratio);}
+          else{c.lineWidth=4*ratio;c.strokeStyle='#F3F5EE';c.strokeText(text,center[0],center[1]);}
+          c.fillStyle='#29352B';c.fillText(text,center[0],center[1]);c.textAlign='start';c.textBaseline='alphabetic';
+        };
+        if(d.type==='dia'||d.type==='rad'){
+          // Leader callout: arrow on the rim, slanted leader, horizontal shoulder under the text.
+          let tip=b;
+          if(d.type==='dia'){
+            const middle=d.p1.map((v,k)=>(v+d.p2[k])/2),centre=project(middle) as Point2;
+            const feature=d.entities?.map(e=>features[String(e.kind==='edge'?-e.id:e.id)]).find(f=>f?.type==='circle'&&f.axis&&f.center&&f.radius);
+            let rim:Point2[];
+            if(feature){
+              const axis=new THREE.Vector3(...feature.axis!).normalize(),u=new THREE.Vector3(Math.abs(axis.x)<.9?1:0,Math.abs(axis.x)<.9?0:1,0).cross(axis).normalize(),v=axis.clone().cross(u);
+              rim=Array.from({length:96},(_,k)=>{const t=k/96*Math.PI*2;return project(new THREE.Vector3(...middle).addScaledVector(u,Math.cos(t)*feature.radius!).addScaledVector(v,Math.sin(t)*feature.radius!).toArray()) as Point2;});
+            }else{
+              const r=Math.hypot(b[0]-a[0],b[1]-a[1])/2;
+              rim=Array.from({length:96},(_,k)=>{const t=k/96*Math.PI*2;return [centre[0]+Math.cos(t)*r,centre[1]+Math.sin(t)*r] as Point2;});
+            }
+            tip=calloutTip(centre,labelCenter,rim);
+          }
+          layouts.push({d,pending,width,center:labelCenter,dir:[0,labelCenter[1]<tip[1]?-1:1],draw:center=>{
+            const right=center[0]>=tip[0],y=center[1]+10*ratio,elbow:Point2=[center[0]+(right?-1:1)*width/2,y],end:Point2=[center[0]+(right?1:-1)*width/2,y];
+            stroke([tip,elbow],[elbow,end]);arrow(tip,elbow);label(center);
+          }});
+        }else if(d.type==='angle'){
+          const middle:Point2=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+          layouts.push({d,pending,width,center:labelCenter,dir:[0,-1],draw:center=>{stroke([a,b],[middle,center]);arrow(a,b);arrow(b,a);label(center);}});
         }else{
           const annotation=pending&&d.reference_plane&&pointer?anchorDimension(d,placement(previewPoint(pointer))):d.annotation;
-          const offset=annotation?{a:project(d.p1.map((v,i)=>v+annotation.offset[i])) as Point2,b:project(d.p2.map((v,i)=>v+annotation.offset[i])) as Point2}:offsetDimension(a as Point2,b as Point2,labelCenter);
-          line(a,offset.a);line(b,offset.b);line(offset.a,offset.b);arrow(offset.a,offset.b);arrow(offset.b,offset.a);
-          if(d.reference_plane)line([(offset.a[0]+offset.b[0])/2,(offset.a[1]+offset.b[1])/2],labelCenter);
-          else {line(offset.a,labelCenter);line(offset.b,labelCenter);}
+          const offset=annotation?{a:project(d.p1.map((v,k)=>v+annotation.offset[k])) as Point2,b:project(d.p2.map((v,k)=>v+annotation.offset[k])) as Point2}:offsetDimension(a,b,labelCenter);
+          const along=[offset.b[0]-offset.a[0],offset.b[1]-offset.a[1]],length=Math.hypot(along[0],along[1]),unit:Point2=length>1e-6?[along[0]/length,along[1]/length]:[0,-1];
+          const onLine=visibleLabelCenter(projectOntoLine(labelCenter,offset.a,offset.b),overlay.width,overlay.height,width,ratio),side=(onLine[0]-(offset.a[0]+offset.b[0])/2)*unit[0]+(onLine[1]-(offset.a[1]+offset.b[1])/2)*unit[1]>=0?1:-1;
+          layouts.push({d,pending,width,center:onLine,dir:[unit[0]*side,unit[1]*side],draw:center=>{
+            // Extension lines leave a gap at the part and overshoot the dimension line.
+            const extensions=[[a,offset.a],[b,offset.b]].flatMap(([p,q])=>{const dx=q[0]-p[0],dy=q[1]-p[1],l=Math.hypot(dx,dy),gap=3*ratio,over=4*ratio;return l>gap?[[[p[0]+dx/l*gap,p[1]+dy/l*gap],[q[0]+dx/l*over,q[1]+dy/l*over]] as Point2[]]:[];});
+            const t=((center[0]-offset.a[0])*along[0]+(center[1]-offset.a[1])*along[1])/(length*length||1);
+            const tail:Point2[][]=t<0?[[offset.a,center]]:t>1?[[offset.b,center]]:[];
+            stroke(...extensions,[offset.a,offset.b],...tail);arrow(offset.a,offset.b);arrow(offset.b,offset.a);label(center);
+          }});
         }
-        c.stroke();
-        for(const p of [a,b]){c.beginPath();line([p[0]-3*ratio,p[1]],[p[0]+3*ratio,p[1]]);line([p[0],p[1]-3*ratio],[p[0],p[1]+3*ratio]);c.stroke();}
-        c.fillStyle=pending||d.id===selectedLabel?'#FFF9CB':'#F3F5EE';c.fillRect(x,y-17*ratio,width,24*ratio);c.fillStyle='#29352B';c.fillText(label,x+8*ratio,y);
-
       });
+      const settled=layouts.filter(l=>!l.pending),shifts=separateLabels(settled.map(l=>({x:l.center[0]-l.width/2,y:l.center[1]-10*ratio,width:l.width,height:20*ratio,dir:l.dir})),4*ratio);
+      for(const l of layouts){
+        const shift=l.pending?[0,0]:shifts[settled.indexOf(l)],center:Point2=[l.center[0]+shift[0],l.center[1]+shift[1]];
+        if(!l.pending)labelBoxes.push({id:l.d.id,x:(center[0]-l.width/2)/ratio,y:center[1]/ratio+10,width:l.width/ratio});
+        l.draw(center);
+      }
     }
     controls.addEventListener('change',()=>{if(viewQuaternion&&1-Math.abs(camera.quaternion.dot(viewQuaternion))>1e-8){viewQuaternion=null;current.current.onViewChange(null);}render();});
     controls.addEventListener('end',()=>controls.update());
@@ -253,7 +287,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       }
       fit();const saved=current.current.model.state?.camera;
       if(saved?.position?.length===3 && saved?.target?.length===3 && [...saved.position,...saved.target,saved.zoom].every(Number.isFinite)){camera.position.fromArray(saved.position);if(saved.up?.length===3&&saved.up.every(Number.isFinite))camera.up.fromArray(saved.up);controls.target.fromArray(saved.target);camera.zoom=Math.max(.01,Math.min(100,saved.zoom));camera.updateProjectionMatrix();controls.update();viewQuaternion=null;current.current.onViewChange(null);}
-      runtime.current.ready=true;current.current.onReady(faces,measureFeatures); render();
+      features=measureFeatures;runtime.current.ready=true;current.current.onReady(faces,measureFeatures); render();
     }
     load().catch(e=>{if(!stopped) current.current.onError(e.message);});
     return()=>{stopped=true;abort.abort();observer.disconnect();container.removeEventListener('keydown',keyDown);controls.dispose();geometry?.dispose();if(mesh)(mesh.material as THREE.Material).dispose();if(edge){edge.geometry.dispose();(edge.material as THREE.Material).dispose();}if(cadLines){cadLines.geometry.dispose();(cadLines.material as THREE.Material).dispose();}renderer.dispose();container.replaceChildren();runtime.current=null;};

@@ -213,3 +213,29 @@ test('surface dimensions hide when their measured span is edge-on',async()=>{
   assert.equal(visiblePlanarDimension([100,100],[102,101]),false);
   assert.equal(visiblePlanarDimension([100,100],[100,106]),true);
 });
+test('dimension text drops units and trailing zeros',async()=>{
+  const {formatDimension}=await import('../src/dimensionPlacement.ts');
+  assert.equal(formatDimension(40,undefined,'mm'),'40');
+  assert.equal(formatDimension(40.5,undefined,'mm'),'40.5');
+  assert.equal(formatDimension(40.126,undefined,'mm'),'40.13');
+  assert.equal(formatDimension(6.1,'dia','mm'),'Ø6.1');
+  assert.equal(formatDimension(3,'rad','mm'),'R3');
+  assert.equal(formatDimension(90,'angle','in'),'90°');
+  assert.equal(formatDimension(25.4,undefined,'in'),'1');
+  assert.equal(formatDimension(6.1,'dia','in'),'Ø0.24');
+});
+test('hole callout arrow lands on the rim point facing the label',async()=>{
+  const {calloutTip}=await import('../src/dimensionPlacement.ts');
+  // Tilted hole projects as an ellipse 20 wide, 5 tall.
+  const rim=Array.from({length:96},(_,k)=>{const t=k/96*Math.PI*2;return [100+20*Math.cos(t),100+5*Math.sin(t)];});
+  const tip=calloutTip([100,100],[200,0],rim);
+  assert.ok(Math.abs(((tip[0]-100)/20)**2+((tip[1]-100)/5)**2-1)<1e-9,'tip is on the ellipse');
+  assert.ok(tip[0]>100&&tip[1]<100,'tip faces up-right toward the label');
+});
+test('overlapping labels slide apart along their own direction',async()=>{
+  const {separateLabels}=await import('../src/dimensionPlacement.ts');
+  const shifts=separateLabels([{x:0,y:0,width:40,height:20,dir:[0,-1]},{x:10,y:5,width:40,height:20,dir:[0,-1]},{x:200,y:0,width:40,height:20,dir:[1,0]}]);
+  assert.deepEqual(shifts[0],[0,0]);
+  assert.ok(shifts[1][0]===0&&5+shifts[1][1]+20<=0,'second label clears the first');
+  assert.deepEqual(shifts[2],[0,0]);
+});

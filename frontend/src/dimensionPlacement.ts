@@ -18,6 +18,33 @@ export function offsetDimension(a:Point2,b:Point2,label:Point2){
   const offset=(label[0]-a[0])*normal[0]+(label[1]-a[1])*normal[1];
   return {a:[a[0]+normal[0]*offset,a[1]+normal[1]*offset] as Point2,b:[b[0]+normal[0]*offset,b[1]+normal[1]*offset] as Point2};
 }
+// Up to 2 decimals (3 in inches), trailing zeros dropped: 40, 40.5, Ø6.1, R3, 90°.
+export function formatDimension(value_mm:number,type:string|undefined,unit:string){
+  const inch=unit==='in'&&type!=='angle',value=Number((value_mm/(inch?25.4:1)).toFixed(inch?3:2));
+  return `${type==='dia'?'Ø':type==='rad'?'R':''}${value||0}${type==='angle'?'°':''}`;
+}
+export function projectOntoLine(p:Point2,a:Point2,b:Point2):Point2{
+  const dx=b[0]-a[0],dy=b[1]-a[1],t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy||1);
+  return [a[0]+dx*t,a[1]+dy*t];
+}
+// Rim point (screen) whose direction from the centre best faces the label.
+export function calloutTip(center:Point2,label:Point2,rim:Point2[]):Point2{
+  const lx=label[0]-center[0],ly=label[1]-center[1];let best=rim[0],score=-Infinity;
+  for(const p of rim){const dx=p[0]-center[0],dy=p[1]-center[1],s=(dx*lx+dy*ly)/(Math.hypot(dx,dy)||1);if(s>score){score=s;best=p;}}
+  return best;
+}
+export type LabelBox={x:number;y:number;width:number;height:number;dir:Point2};
+// Slide each later label along its own direction until it clears earlier ones. Returns the shifts.
+export function separateLabels(boxes:LabelBox[],step=4,limit=60):Point2[]{
+  const placed:LabelBox[]=[];
+  return boxes.map(box=>{
+    let shift:Point2=[0,0];
+    const hits=(s:Point2)=>placed.some(o=>box.x+s[0]<o.x+o.width&&o.x<box.x+s[0]+box.width&&box.y+s[1]<o.y+o.height&&o.y<box.y+s[1]+box.height);
+    for(let i=1;i<=limit&&hits(shift);i++)shift=[box.dir[0]*step*i,box.dir[1]*step*i];
+    placed.push({...box,x:box.x+shift[0],y:box.y+shift[1]});
+    return shift;
+  });
+}
 
 import * as THREE from 'three';
 export type Placement={position:number[];matrix:number[];viewport:number[]};
