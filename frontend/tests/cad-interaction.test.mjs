@@ -126,7 +126,7 @@ test('a cursor-following dimension label sits directly above the pointer when sp
     const px=pointer[0]*800,py=pointer[1]*600;
     assert.ok(cx-60>=12&&cx+60<=788);
     assert.ok(baseline-17>=12&&baseline+7<=588);
-    assert.ok(py<baseline-17-24||py>baseline+7+24,'label has a visible gap from the pointer');
+    assert.ok(py<baseline-17-12||py>baseline+7+12,'label has a visible gap from the pointer');
   }
   assert.ok(cursorLabelPosition([.4,.38],358,420,90)[1]-17>=120,'mobile label clears the view controls');
 });

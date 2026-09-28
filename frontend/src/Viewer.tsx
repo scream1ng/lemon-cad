@@ -76,12 +76,12 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     function project(p:number[]){const v=new THREE.Vector3(...p).project(camera);return [(v.x+1)*overlay.width/2,(1-v.y)*viewHeight*renderer.getPixelRatio()/2];}
     let extent=100, center=new THREE.Vector3(), stopped=false;
     const abort = new AbortController();
-    let viewQuaternion:THREE.Quaternion|null=null;
+    let viewQuaternion:THREE.Quaternion|null=null,viewName:string|null=null;
     function fit(view='iso') {
       if (!mesh) return;
       const dir = view === 'front' ? new THREE.Vector3(0,-1,0) : view === 'top' ? new THREE.Vector3(0,0,1) : view === 'right' ? new THREE.Vector3(1,0,0) : new THREE.Vector3(1,-1,0.8).normalize();
       camera.up.set(0,view==='top'?1:0,view==='top'?0:1);
-      camera.position.copy(center).addScaledVector(dir,extent*3); camera.zoom=1; controls.target.copy(center); resize(); controls.update();viewQuaternion=camera.quaternion.clone();current.current.onViewChange(view);
+      camera.position.copy(center).addScaledVector(dir,extent*3); camera.zoom=1; controls.target.copy(center); resize(); controls.update();viewQuaternion=camera.quaternion.clone();viewName=view;current.current.onViewChange(view);
     }
     function normalTo(frame:SketchFrame){
       if(!mesh)return;
@@ -98,7 +98,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     }
     const observer = new ResizeObserver(resize); observer.observe(container);
     const ray = new THREE.Raycaster(); let down=[0,0];
-    let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null,selectedLabel:string|null=null,draggedLabel=false;
+    let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null,downCamera:{position:THREE.Vector3;up:THREE.Vector3;target:THREE.Vector3;view:THREE.Quaternion|null;name:string|null}|null=null,selectedLabel:string|null=null,draggedLabel=false;
     function placement(position:number[]):Placement{return {position,matrix:new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).toArray(),viewport:[container.clientWidth,container.clientHeight]};}
     function previewPoint(position:Point2):Point2{
       const preview=current.current.preview;if(!preview)return position;
@@ -112,6 +112,8 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
       dragLabel=(e.button===0&&!current.current.preview&&!current.current.pending?labelBoxes:[]).find(b=>x>=b.x&&x<=b.x+b.width&&y>=b.y-20&&y<=b.y+8)?.id||null;
       if(dragLabel){draggedLabel=false;container.focus();e.stopImmediatePropagation();controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);}
+      // Left click also rotates; remember the view so a click (≤5px jitter) can undo the accidental nudge.
+      downCamera=e.button===0&&!dragLabel?{position:camera.position.clone(),up:camera.up.clone(),target:controls.target.clone(),view:viewQuaternion?.clone()||null,name:viewName}:null;
     }
     function hitAt(e:PointerEvent){
       if(!mesh)return;
@@ -126,6 +128,8 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(dragLabel){selectedLabel=dragLabel;render();dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
       if(selectedLabel){selectedLabel=null;render();}
       controls.update();
+      if(downCamera&&e.button===0&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<=5){camera.position.copy(downCamera.position);camera.up.copy(downCamera.up);controls.target.copy(downCamera.target);viewQuaternion=downCamera.view;controls.update();if(viewQuaternion)current.current.onViewChange(downCamera.name);render();}
+      downCamera=null;
       if(e.button!==0||!mesh)return;
       if(current.current.selecting){if(Math.hypot(e.clientX-down[0],e.clientY-down[1])<=5)current.current.onSelectFace?.(hitAt(e)||null);return;}
       if(!current.current.measuring)return;
