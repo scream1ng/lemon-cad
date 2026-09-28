@@ -77,7 +77,7 @@ test('a circular rim near a small hole picks the complete hole feature',()=>{
   camera.position.set(0,100,0);camera.up.set(0,0,1);camera.lookAt(0,0,0);camera.updateMatrixWorld();
   const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(0,0),camera);
   const circle={id:7,type:'circle',points:Array.from({length:65},(_,i)=>[6*Math.cos(i*Math.PI/32),3,6*Math.sin(i*Math.PI/32)])};
-  assert.equal(pickCadEntity(ray,mesh,ids,rims,[circle],[{id:15,type:'cylinder'}],camera,800,800,400,400)?.id,15);
+  assert.equal(pickCadEntity(ray,mesh,ids,rims,[circle],camera,800,800,400,400)?.id,15);
 });
 test('a plate covering a hole opening prevents diameter selection through the plate',()=>{
   const {camera,rims}=model();
@@ -95,6 +95,15 @@ test('actual straight STEP edge snaps independently of face IDs',async()=>{
   assert.equal(pickEdge(ray,mesh,edges,camera,800,800,405,400)?.id,-7);
   assert.equal(pickEdge(ray,mesh,edges,camera,800,800,430,400),undefined);
 });
+test('visible surface wins beside an edge; Option picks the edge explicitly',()=>{
+  const camera=new THREE.OrthographicCamera(-20,20,20,-20,.1,1000);camera.position.set(0,0,100);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshBasicMaterial());
+  const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(0,0),camera);
+  const edges=[{id:7,type:'line',points:[[0,-15,0],[0,15,0]]}];
+  const args=[ray,mesh,[3,3],[],edges,camera,800,800,400,400];
+  assert.equal(pickCadEntity(...args)?.id,3);
+  assert.equal(pickCadEntity(...args,true)?.id,-7);
+});
 
 test('one hole pulls diameter; another feature selects distance; empty space places',async()=>{
   const {dimensionClick}=await import('../src/dimensionPlacement.ts');
@@ -102,7 +111,7 @@ test('one hole pulls diameter; another feature selects distance; empty space pla
   assert.equal(dimensionClick(true,1,true,false),'select');
   assert.equal(dimensionClick(false,1,true,false),'place');
   assert.equal(dimensionClick(false,2,true,false),'place');
-  assert.equal(dimensionClick(true,2,true,false),'place');
+  assert.equal(dimensionClick(true,2,true,false),'select');
   assert.equal(dimensionClick(false,2,true,true),'none');
   assert.equal(dimensionClick(false,0,false,false),'none');
 });
@@ -151,8 +160,21 @@ test('instant analytical measurements distinguish hole pitch from wall clearance
   assert.deepEqual(withReferencePlane(saved,features).reference_plane,{origin:[20,20,0],normal:[0,0,1]},'older saved dimensions align when moved');
   assert.equal(withReferencePlane({...saved,p2:[20,20,10]},features).reference_plane,undefined,'axial measurements cannot lie in the hole face');
   assert.equal(quickMeasure(features,[-3,1],'clearance').value_mm,14);
+  const endpoint=quickMeasure({...features,'-3':{...features['-3'],b:[0,10,0]}},[1,-3],'clearance');
+  assert.deepEqual(endpoint.p2,[0,10,0],'dimension ends on the finite edge');
+  assert.ok(Math.abs(endpoint.value_mm-(Math.hypot(20,10)-6))<1e-9);
   assert.equal(quickMeasure({},[1,2]),null,'older imports retain server fallback');
   assert.throws(()=>quickMeasure({...features,'2':{...features['2'],axis:[1,0,0]}},[1,2]),/not parallel/);
+});
+test('hole-to-surface and hole-to-edge default to wall clearance',async()=>{
+  const {defaultMeasureRelation}=await import('../src/quickMeasure.ts');
+  const features={'15':{type:'circle'},'-7':{type:'circle'},'-8':{type:'line'},'16':{type:'circle'}};
+  const faces=[{id:10,type:'plane'},{id:15,type:'cylinder'},{id:16,type:'cylinder'}];
+  assert.equal(defaultMeasureRelation(features,faces,[15,10]),'clearance');
+  assert.equal(defaultMeasureRelation(features,faces,[15,-8]),'clearance');
+  assert.equal(defaultMeasureRelation(features,faces,[15,16]),'centre');
+  assert.equal(defaultMeasureRelation(features,faces,[-7,10]),'centre');
+  assert.equal(defaultMeasureRelation(features,faces,[10,-8]),'centre');
 });
 
 test('an isometric placement keeps the text on the dimension line after changing views',async()=>{

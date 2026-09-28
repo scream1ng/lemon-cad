@@ -57,7 +57,7 @@ New identity for a separate product. User selected **light, clean workshop** wit
 
 ## Responsive and access
 
-- Desktop: centred product container, maximum 1280 px, minimum 24 px page gutters; never stretch the app across an ultrawide display. Header flush to the top edge; one CAD canvas with no permanent side panels.
+- Desktop authoring after sign-in: fluid width, 16 px page gutters, viewport-height layout, and two working cards. Chat/History share the left card (270–340 px); the model fills the remaining width. Panels scroll independently. Public landing and pricing retain their bounded 1280 px container.
 - Landing: centred drop area, maximum 790 px; primary action visible on arrival.
 - Mobile: 12 px outer gutters; preserve the bounded page treatment without horizontal scrolling.
 - Below 760 px: scroll the command bar horizontally and wrap top actions. Target 44 px touch controls in implementation.

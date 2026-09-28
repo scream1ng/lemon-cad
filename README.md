@@ -99,3 +99,58 @@ rights in `worker/PROVENANCE.md` before public release.
 
 See [setup instructions](research/google-login-setup.md) for Google client configuration,
 Railway variables, account linking, and the optional Claude connection.
+
+## Native CAD workspace
+
+After signing in, choose **New part**. Dimension a rectangle, circle or closed line
+profile on XY, XZ or YZ, with a plane offset. The initial part includes a 10 mm
+extrusion; edit its depth in **History**. **Sketch** adds another profile, **Extrude**
+joins it to the body, and **Extruded cut** removes material to a depth or through all
+in the chosen direction. **Hole** adds a circle sketch and through-cut together.
+The planar editor supports pointer placement and numeric coordinates; line profiles
+must be closed before previewing. This is dimensioned profile editing, not a general
+sketch constraint solver.
+
+Review exact 3D previews before Apply; Cancel retains the previous model. Disconnected
+additions, invalid profiles, missing dependencies, and cuts that miss, split or erase
+the body are rejected. History supports upstream edits, suppression, rollback and
+session undo/redo. Save creates an immutable revision; My files reopens the editable
+history and geometry. Export includes exact STEP and existing PNG/PDF views.
+
+Select a planar face on a native part, then **Sketch on face** (or Rectangle, Circle,
+Line or Hole in the toolbar). Draw directly in the main viewport: two corners for
+Rectangle, centre/radius for Circle, or connected Line segments closed at the first
+point. History / Chat stays on the left; modeling options and confirmation use
+compact popovers inside the right canvas. **Smart Dimension**, in the canvas’s
+left rail, selects an edge or circle,
+places a label, and edits rectangle width/height or circle diameter. Existing solid
+measurement remains read-only outside sketch mode. Select a rectangle side and a
+parallel straight model edge, then place the label and enter a gap to position the
+rectangle. This stores its coordinates, not a persistent edge relationship; temporary
+gap labels disappear when sketch editing ends. Older meshes use their existing
+0.001 mm edge coordinates; newly generated straight edges retain full precision.
+Right-drag pans; scrolling zooms.
+Choose **Extrude** from the active closed sketch for an exact preview, depth and
+confirmation. Back to sketch preserves the profile; Cancel restores the original
+part. Applying a new sketch and extrusion is one undoable geometry edit. Face-based
+additions default outward; cuts default inward. Curved faces need a datum plane.
+Polygon coordinates remain editable; general line/angle constraints are unavailable.
+Starting a part without an existing model retains the initial profile editor.
+
+Face sketches use a fixed, full-precision plane in CAD document version three.
+The plane does not follow later movements of its source face. Cancel restores the
+previous camera and model. New datum-plane parts still use version two.
+Existing version-one rectangle/circle,
+through-hole and outer-fillet projects still open and edit. Adding a new sketch or
+cut upgrades a copy; old saved revisions are not rewritten. Version-one fillets are
+preserved when upgrading. General edge-selected fillets are not available in new
+version-two/three parts. No SQL migration or new dependency is needed.
+
+Chat supports explicit base-dimension commands: `thickness 12 mm`, `width 80 mm`,
+`height 50 mm`. Version-one parts also support `hole diameter 12 mm` and
+`fillet radius 2 mm`; use History for individual features. This grammar is not an AI
+model. The existing configured-provider engineering chat applies to imported parts.
+
+Associative face attachment, imported feature-history recovery, general sketch solving,
+remaining solid tools, surfaces, sheet-metal bends/flat patterns, and assemblies are
+unavailable. Disabled toolbar tools explain their limits.

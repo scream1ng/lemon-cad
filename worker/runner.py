@@ -9,6 +9,16 @@ sys.path.insert(0, str(ROOT))
 
 
 def execute(kind, payload, source, out):
+    if kind == 'cad':
+        from cad.authoring import rebuild, write_step, volume
+        shape, document = rebuild(payload['document'])
+        step = out / 'part.step'
+        write_step(shape, step)
+        result = execute('import', {}, step, out)
+        result['cad_document'] = document
+        result['volume_mm3'] = volume(shape)
+        result['artifacts'].append({'path': 'part.step', 'kind': 'cad_step'})
+        return result
     if kind == 'import':
         if source.suffix == '.stl':
             # Validate basic STL framing here; browser performs the mesh decode.
@@ -20,26 +30,31 @@ def execute(kind, payload, source, out):
                 raise ValueError('Invalid STL: expected ASCII facets or a complete binary triangle list.')
             return {'mesh_based': True}
         from cad.loader import load_step
-        from cad.icl import faced_mesh, indexed_edges
+        from cad.icl import faced_mesh, indexed_edges, _cylinder_faces, _face_map, _edge_map
         shape = load_step(str(source))
         if shape.IsNull():
             raise ValueError('STEP contains no supported geometry.')
         result = faced_mesh(shape)
         result['edges'] = indexed_edges(shape)
         from cad.smart_measure import feature, smart_measure
+        cylinders = _cylinder_faces(shape)
         result['measure_features'] = {}
-        for kind, items in [('face', result['faces']), ('edge', result['edges'])]:
+        for kind, items, mapping in [('face', result['faces'], _face_map(shape)), ('edge', result['edges'], _edge_map(shape))]:
             for item in items:
                 ref = {'kind': kind, 'id': item['id']}
-                descriptor = feature(shape, ref)
+                descriptor = feature(shape, ref, mapping)
                 if descriptor['type'] not in ('circle', 'line'):
                     continue
-                descriptor['single'] = smart_measure(shape, [ref])
+                descriptor['single'] = smart_measure(shape, [ref], known_features=[descriptor], cylinder_faces=cylinders, face_map=mapping if kind == 'face' else None)
                 result['measure_features'][str(item['id'] if kind == 'face' else -item['id'])] = descriptor
         if not result['indices'] or len(result['indices']) > 6000000:
             raise ValueError('No mesh generated, or model exceeds the two million triangle limit.')
         (out / 'mesh.json').write_text(json.dumps(result, allow_nan=False))
         return {'face_count': result['face_count'], 'artifacts': [{'path': 'mesh.json', 'kind': 'mesh'}]}
+    if kind == 'face_plane':
+        from cad.loader import load_step
+        from cad.icl import face_sketch_plane
+        return {'frame': face_sketch_plane(load_step(str(source)), payload['face_id'])}
     if kind == 'measure':
         from cad.loader import load_step
         from cad.smart_measure import smart_measure

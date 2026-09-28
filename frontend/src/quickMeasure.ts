@@ -3,6 +3,14 @@ type Measurement=Omit<Dimension,'id'|'label'> & {label?:string};
 export type MeasureFeature={type:string;center?:number[];axis?:number[];radius?:number;axial?:boolean;a?:number[];b?:number[];single?:Measurement};
 const dot=(a:number[],b:number[])=>a.reduce((s,v,i)=>s+v*b[i],0);
 const sub=(a:number[],b:number[])=>a.map((v,i)=>v-b[i]);
+export function defaultMeasureRelation(features:Record<string,MeasureFeature>,faces:{id:number;type:string}[],selection:number[]){
+  if(selection.length!==2)return 'centre';
+  const circle=selection.find(id=>features[String(id)]?.type==='circle');
+  if(circle===undefined)return 'centre';
+  const other=selection.find(id=>id!==circle)!;
+  const cylinder=circle>0&&faces.some(f=>f.id===circle&&f.type==='cylinder');
+  return features[String(other)]?.type==='line'||cylinder&&other>0&&faces.some(f=>f.id===other&&f.type==='plane')?'clearance':'centre';
+}
 export function withReferencePlane(d:Dimension,features:Record<string,MeasureFeature>):Dimension{
   if(d.reference_plane||d.entities?.length!==2||['dia','rad','angle'].includes(d.type||''))return d;
   const circle=d.entities.map(e=>features[String(e.kind==='edge'?-e.id:e.id)]).find(f=>f?.type==='circle'&&f.axis);
@@ -20,12 +28,14 @@ export function quickMeasure(features:Record<string,MeasureFeature>,selection:nu
   if(a.type!=='circle'||!['circle','line'].includes(b.type))return null;
   let c=a.center!.slice();const n=a.axis!,r=a.radius!;let target:number[],radii:number,label:string;
   if(b.type==='line'){
-    if(Math.abs(dot(n,b.axis!))>1e-6)throw new Error('Select an edge perpendicular to the hole axis.');
+    const edge=sub(b.b!,b.a!),length=Math.hypot(...edge);if(length<=1e-6)throw new Error('Select a nonzero edge.');
+    const axis=edge.map(v=>v/length);
+    if(Math.abs(dot(n,axis))>1e-6)throw new Error('Select an edge perpendicular to the hole axis.');
     const shift=dot(sub(b.a!,c),n);
     if(!a.axial&&Math.abs(shift)>1e-5)throw new Error('Select a hole rim and edge in the same plane.');
     c=c.map((v,i)=>v+shift*n[i]);
-    const t=dot(sub(c,b.a!),b.axis!);target=b.a!.map((v,i)=>v+t*b.axis![i]);radii=r;
-    label='Centre to edge'+(t< -1e-5||t>Math.hypot(...sub(b.b!,b.a!))+1e-5?' (extended)':'');
+    const t=Math.max(0,Math.min(length,dot(sub(c,b.a!),axis)));target=b.a!.map((v,i)=>v+t*axis[i]);radii=r;
+    label='Centre to edge';
   }else{
     if(Math.abs(Math.abs(dot(n,b.axis!))-1)>1e-6)throw new Error('Hole axes are not parallel. Select coplanar circular rims.');
     const shift=dot(sub(b.center!,c),n);

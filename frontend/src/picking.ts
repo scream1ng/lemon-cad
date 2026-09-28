@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import {pickEdge,type CadEdge} from './edgePicking.ts';
 
+export function pickSketchFace(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[]){
+  const hit=ray.intersectObject(mesh)[0];
+  return hit&&hit.faceIndex!=null&&ids[hit.faceIndex]?{id:ids[hit.faceIndex],point:hit.point.toArray()}:undefined;
+}
+
 // Normalize signed zero as well as tessellation noise at a closed cylinder seam.
 const vertexKey=(p:THREE.Vector3)=>p.toArray().map(v=>Math.round(v*10000)).join(',');
 
@@ -47,10 +52,10 @@ export function pickCadFace(ray:THREE.Raycaster, mesh:THREE.Mesh, ids:number[], 
   return best || opening || (direct?{id:ids[direct.faceIndex||0]||0,point:direct.point.toArray()}:undefined);
 }
 
-export function pickCadEntity(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[],rims:Rim[],edges:CadEdge[],faces:{id:number;type:string}[],camera:THREE.Camera,width:number,height:number,x:number,y:number){
+export function pickCadEntity(ray:THREE.Raycaster,mesh:THREE.Mesh,ids:number[],rims:Rim[],edges:CadEdge[],camera:THREE.Camera,width:number,height:number,x:number,y:number,preferEdge=false){
   const face=pickCadFace(ray,mesh,ids,rims,camera,width,height,x,y);
-  if(face&&faces.some(f=>f.id===face.id&&f.type==='cylinder'))return face;
-  return pickEdge(ray,mesh,edges,camera,width,height,x,y)||face;
+  if(preferEdge)return pickEdge(ray,mesh,edges,camera,width,height,x,y)||face;
+  return face||pickEdge(ray,mesh,edges,camera,width,height,x,y);
 }
 
 type RimLoop={faceId:number;points:THREE.Vector3[];plane:THREE.Plane};

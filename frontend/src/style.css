@@ -58,10 +58,7 @@ body{padding:0 24px}.app-shell{border-top:0;border-radius:0;min-height:100vh}.he
 .workspace-chat-panel{display:flex;flex:1;min-height:0}
 .workspace-chat{display:flex;flex-direction:column;min-height:0;flex:1}
 .workspace-chat-body{flex:1;min-height:0;overflow:auto;padding:24px 20px}
-.workspace-chat-body h2{font-size:18px;letter-spacing:-.3px;margin:0 0 12px}
-.workspace-chat-body>p{margin:0;color:var(--olive);font-size:12px}
 .chat-attachment{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:6px;background:#f5f6f0;font-size:11px;overflow-wrap:anywhere}
-.workspace-chat-body .chat-attachment{margin-top:18px}
 .workspace-project-item:hover,.workspace-project-item:focus-visible{background:#edf1e7}
 .workspace-chat-log{display:grid;gap:10px;margin-top:18px}
 .workspace-chat-log article{padding:10px;border-radius:7px;background:#f5f6f0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -87,7 +84,7 @@ body{padding:0 24px}.app-shell{border-top:0;border-radius:0;min-height:100vh}.he
 .workspace-project-list h3{margin:10px 9px 6px;color:var(--olive);font-size:11px;letter-spacing:.04em}
 .workspace-project-row{display:flex;align-items:center;gap:4px}
 .workspace-project-item{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:9px;border-radius:7px;text-align:left;font-size:12px}
-.workspace-project-item.selected{background:#f8f4cd}
+.workspace-project-item.selected{background:transparent!important;box-shadow:inset 0 0 0 1px #c6cec0}
 .workspace-project-item>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}
 .workspace-project-item small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
 .workspace-row-icon{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:6px;background:#edf1e7;color:var(--olive)}
@@ -148,3 +145,214 @@ body{padding:0 24px}.app-shell{border-top:0;border-radius:0;min-height:100vh}.he
 @media(max-width:760px){.pricing-home .pricing-card>p{min-height:0}}
 
 .pricing-home .pricing-card ul{margin:0 0 24px;gap:12px}.pricing-home .pricing-card li{font-size:13px;line-height:1.5}.pricing-home .pricing-card li svg{margin-top:2px}
+
+/* Native authoring: two fluid working cards and a viewport-sized canvas. */
+body:has(.authoring-screen){padding:0 16px}
+.authoring-screen{max-width:none;height:100dvh;min-height:0;display:flex;flex-direction:column}
+.authoring-screen>.header{height:68px;flex:none;display:flex;padding:0;gap:24px;min-width:0}
+.authoring-screen>.header .brand img{width:130px}
+.authoring-screen>.header>nav{display:none}
+.authoring-screen>.header>.account{margin-left:0;flex:none}
+.authoring-project-title{min-width:0;flex:1;border-left:1px solid var(--border);padding-left:20px}
+.authoring-project-title strong,.authoring-project-title small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.authoring-project-title strong{font-size:13px;font-weight:600}
+.authoring-project-title small{font-size:10px;color:var(--muted);margin-top:3px}
+.authoring-header-actions{display:flex;gap:8px;flex:none;align-items:center}
+.authoring-screen>main{flex:1;min-height:0}
+.authoring-screen .workspace-stage.with-sidebar{grid-template-columns:clamp(270px,23vw,340px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);flex:1;min-height:0;gap:12px}
+.authoring-screen .workspace-workpanel,.authoring-screen .workspace-workpanel-content{flex:1;min-height:0;gap:0}
+.authoring-screen .model-workspace{flex:1;min-height:0;display:flex;flex-direction:column}
+.authoring-screen .model-workspace>.toolbar{display:none}
+.authoring-screen .model-workspace .cad-workspace{height:auto;flex:1;min-height:180px;margin:0 8px;border-radius:8px}
+.authoring-screen .model-workspace,.workspace-sidepanel{border:1px solid #e3e7dc;border-radius:12px;box-shadow:none}
+.authoring-screen .workspace-sidepanel{min-height:0;height:100%}
+.authoring-screen .cad-status{border:0;padding:9px 15px;font-size:10px;flex:none;min-height:32px}
+.authoring-screen>footer{flex:none;font-size:9px;padding:8px 0;min-height:28px}
+.authoring-screen>footer img{width:12px;height:12px}
+.authoring-screen .alert{flex:none;border-radius:6px;margin-bottom:8px;padding:8px 14px}
+.workspace-panel-heading{padding:8px;border-bottom:1px solid #e8ebe2;flex:none}
+.workspace-side-tabs{width:100%;gap:0}
+.workspace-side-tabs button{flex:1;font-size:12px;min-height:34px;padding:7px 12px;border-radius:5px}
+.workspace-side-tabs button[aria-selected=true]{background:#edf1e7;font-weight:600}
+.workspace-side-content>section{display:flex;flex:1;min-height:0}
+.workspace-chat-body{padding:28px 20px}
+.workspace-chat-heading{display:flex;align-items:center;justify-content:center;gap:8px;font-size:20px;letter-spacing:-.4px;margin:0;font-weight:600}
+.workspace-chat-heading img{width:26px;height:26px}
+.workspace-chat.is-empty .workspace-chat-composer{margin-top:0}
+.workspace-chat.is-empty .workspace-chat-composer textarea{min-height:112px}
+.workspace-chat.is-empty .workspace-chat-status{text-align:center}
+.workspace-chat-composer{border-color:#d4dbca;border-radius:9px;flex:none;margin-top:8px}
+.workspace-chat-composer textarea{resize:none;max-height:130px}
+.workspace-chat-status{font-size:10px;flex:none}
+.authoring-commands{flex:none;min-width:0}
+.authoring-families{display:flex;align-items:center;gap:4px;overflow-x:auto;padding:0 12px;border-bottom:1px solid var(--border);scrollbar-width:thin}
+.authoring-families>button{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;white-space:nowrap;min-height:44px;padding:0 12px;border-bottom:2px solid transparent;font-size:12px}
+.authoring-families>button[aria-selected=true]{border-bottom-color:#b49e19;font-weight:600}
+.authoring-families>.authoring-search{margin-left:auto;display:grid;place-items:center;padding:0 8px}
+.authoring-strip{display:flex;gap:3px;align-items:center;padding:8px 12px;overflow-x:auto;scrollbar-width:thin;min-height:54px}
+.authoring-tool{display:inline-flex;flex:none;align-items:center;justify-content:center;gap:7px;width:38px;height:38px;min-height:38px;border-radius:5px;color:#56654b}
+.authoring-tool[aria-disabled=true]{opacity:.4;cursor:not-allowed}
+.authoring-tool span{font-size:12px;white-space:nowrap}
+.authoring-strip.with-labels .authoring-tool{width:auto;padding:0 9px}
+.authoring-separator{height:22px;width:1px;background:var(--border);flex:none;margin:0 5px}
+.labels-toggle{margin-left:auto}
+.authoring-tooltip{position:fixed;z-index:1000;width:240px;padding:12px 14px;border:1px solid #cbd2c1;border-radius:7px;background:#fffefa;color:#29352b;box-shadow:0 6px 20px #29352b18;font-size:12px;line-height:1.5}
+.authoring-tooltip strong{display:block;margin-bottom:4px}
+.authoring-tooltip span{color:var(--muted)}
+.tool-search-dialog{padding:24px;width:520px}
+.tool-search-dialog>input{width:100%;margin-bottom:12px}
+.tool-search-results{max-height:50dvh;overflow:auto}
+.tool-search-results>button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 4px;border-bottom:1px solid var(--border)}
+.tool-search-results span{flex:1;min-width:0}
+.tool-search-results strong{font-size:12px;display:block}
+.tool-search-results small{font-size:10px;color:var(--muted);display:block;margin-top:3px}
+.tool-search-results [aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.cad-editor,.cad-history{flex:1;min-height:0;display:flex;flex-direction:column}
+.cad-editor{padding:20px;overflow:auto;overscroll-behavior:contain}
+.cad-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}
+.cad-editor-heading h2{margin:0;font-size:17px;letter-spacing:-.3px}
+.icon-button{display:inline-grid;place-items:center;flex:none;width:32px;height:32px;border-radius:5px}
+.cad-editor label{font-size:12px;margin:12px 0}
+.cad-number{display:flex;align-items:center;gap:8px;border:1px solid #b4bcad;border-radius:5px;padding-right:10px}
+.cad-number input{width:100%;min-width:0;border:0;padding:9px;background:transparent;font:13px ui-monospace,monospace}
+.cad-number span{font-size:10px;color:var(--muted)}
+.cad-profile-preview{background:#f3f5ee;border-radius:7px;text-align:center;padding:10px;margin-bottom:4px}
+.cad-profile-preview svg{height:100px;width:100%;fill:#e4eadb;stroke:#829174;stroke-width:1.5}
+.cad-profile-preview path{fill:none;stroke:#b2bdab;stroke-width:1}
+.cad-profile-preview span{font-size:10px;color:var(--muted)}
+.cad-editor-note{margin-top:auto;padding-top:22px;font-size:10px;line-height:1.6;color:var(--muted)}
+.cad-editor-actions{display:flex;gap:8px;padding-top:12px;flex:none}
+.cad-editor-actions .button{flex:1;padding:8px}
+.cad-preview-bar{position:absolute;z-index:8;top:70px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 24px);padding:8px;background:var(--paper);border:1px solid #b6c6a5;border-radius:8px;box-shadow:0 4px 16px #29352b12}
+.cad-preview-bar>span{font-size:11px;padding:0 6px}
+.cad-history-tabs{display:flex;gap:18px;flex:none;padding:0 18px;border-bottom:1px solid var(--border)}
+.cad-history-tabs button{min-height:42px;padding:0;border-bottom:2px solid transparent;font-size:12px}
+.cad-history-tabs button[aria-selected=true]{border-color:#b49e19;font-weight:600}
+.cad-history-content{flex:1;min-height:0;overflow:auto;padding:14px 12px;overscroll-behavior:contain}
+.cad-search{display:flex;flex-direction:row;align-items:center;gap:8px;border:1px solid var(--border);border-radius:5px;margin:0 0 20px;padding:0 9px}
+.cad-search input{border:0;padding:8px 0;min-width:0;width:100%;font-size:11px;background:none}
+.cad-history-root{display:flex;align-items:center;gap:8px;padding:0 6px 12px;font-size:12px}
+.cad-history-root strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.cad-feature{display:flex;align-items:center;min-width:0;border-radius:5px}
+.cad-feature:focus-within{box-shadow:inset 0 0 0 1px #c6cec0}
+.cad-feature-main{flex:1;min-width:0;display:flex;align-items:center;gap:6px;min-height:30px;padding:4px 2px;text-align:left;font-size:12px}
+.cad-feature-main>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cad-feature-main small{font:10px ui-monospace,monospace;color:var(--muted);white-space:nowrap}
+.cad-feature-action{padding:4px;min-height:28px;color:var(--muted)}
+.cad-feature-disclosure,.cad-feature-indent{width:18px;flex:0 0 18px}
+.cad-feature-disclosure{display:grid;place-items:center;min-height:30px;padding:0;color:var(--muted)}
+.cad-feature-disclosure[aria-expanded=true] svg{transform:rotate(90deg)}
+.cad-feature-child{margin-left:18px}
+.cad-feature-actions{display:flex;opacity:0;pointer-events:none}
+.cad-feature:hover .cad-feature-actions,.cad-feature:focus-within .cad-feature-actions{opacity:1;pointer-events:auto}
+@media(hover:none),(pointer:coarse){.cad-feature-actions{opacity:1;pointer-events:auto}.cad-feature-disclosure,.cad-feature-main,.cad-feature-action{min-height:44px}}
+.cad-feature.is-suppressed .cad-feature-main{opacity:.5;text-decoration:line-through}
+.cad-history-empty{text-align:center;padding:30px 12px;color:var(--muted);font-size:12px}
+.cad-history-empty p{margin:14px 0}
+.cad-import-row{display:flex;gap:8px;align-items:center;font-size:12px;padding:10px 5px}
+.cad-history-content>.muted{padding:0 5px;font-size:11px;line-height:1.7}
+.cad-section-label{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:18px 5px 0}
+.cad-dimension-row{display:flex;align-items:center;gap:8px;font-size:11px;padding:9px 5px}
+.cad-dimension-row>span{flex:1}.cad-dimension-row small{display:block;font:10px ui-monospace,monospace;color:var(--muted)}
+.cad-version{display:block;width:100%;padding:12px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.cad-version[aria-current=true]{box-shadow:inset 0 0 0 1px #c6cec0;border-radius:5px}
+.cad-version strong{display:flex;justify-content:space-between;font-size:12px;font-weight:500}
+.cad-version>span{display:block;font-size:10px;color:var(--muted);margin-top:6px}
+.workspace-files-dialog{width:min(800px,calc(100vw - 24px))}
+.workspace-files-dialog .modal-content{padding:24px}
+.files-dialog-heading{margin:0 0 20px}
+.files-dialog-heading h2{font-size:22px;margin:0 0 5px}
+.files-dialog-heading>span{font-size:11px;color:var(--muted)}
+.workspace-files-dialog .workspace-project-list{min-height:200px;max-height:50dvh}
+.workspace-files-dialog .workspace-project-controls,.workspace-files-dialog .workspace-projects-heading{padding-inline:0}
+.workspace-files-dialog .workspace-project-search{width:100%;margin-inline:0}
+.workspace-files-dialog .workspace-project-list{padding-inline:0}
+.file-source-link{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 12px;font-size:12px;white-space:nowrap}
+@media(max-width:1050px){.authoring-screen>.header{gap:12px}.authoring-project-title{padding-left:12px}.authoring-header-actions{gap:5px}.authoring-header-actions .button{padding-inline:8px}.authoring-families{padding-inline:6px;gap:0}.authoring-families>button{padding-inline:8px}.authoring-strip{padding-inline:8px}}
+@media(max-width:760px){
+ body:has(.authoring-screen){padding:0 12px}
+ .authoring-screen{height:auto;min-height:100dvh}
+ .authoring-screen>.header{height:auto;min-height:112px;padding:12px 0;flex-wrap:wrap;gap:10px}
+ .authoring-screen>.header .brand img{width:112px}
+ .authoring-project-title{order:3;flex-basis:calc(100% - 70px);border:0;padding:0}
+ .authoring-screen>.header>.account{margin-left:auto;order:2}
+ .authoring-header-actions{order:4;flex-basis:100%;flex-wrap:wrap}
+ .authoring-header-actions .button{min-height:40px}
+ .authoring-screen .workspace-stage.with-sidebar{display:flex;gap:12px}
+ .authoring-screen .workspace-workpanel{order:0}
+ .authoring-screen .model-workspace{height:clamp(440px,72dvh,650px);flex:none}
+ .authoring-screen .workspace-sidepanel{order:1;height:540px;min-height:0}
+ .authoring-families>button{min-height:44px}
+ .authoring-tool{width:44px;height:44px}
+ .authoring-screen .cad-status{font-size:9px;gap:4px}
+ .authoring-screen .cad-viewbar{max-width:calc(100% - 16px);top:10px;gap:2px}
+ .authoring-screen .cad-viewbar .command{font-size:10px;padding:0 5px}
+ .authoring-screen .cad-viewbar .command svg{width:16px;height:16px}
+ .authoring-screen .cad-workspace .orientation-tools{top:58px}
+ .authoring-screen .cad-toolrail{left:8px}
+ .cad-preview-bar{top:auto;bottom:60px}
+ .cad-editor-actions .button,.cad-feature-action,.cad-feature-main{min-height:44px}
+ .authoring-screen>footer span:last-child{display:none}
+ .workspace-files-dialog .modal-content{padding:20px 16px}
+}
+@media(hover:none),(pointer:coarse){.authoring-tool{width:44px;height:44px}.authoring-tool[aria-disabled=true]{opacity:.5}}
+@media(max-width:760px){.authoring-header-actions>.authoring-import span{display:none}.authoring-header-actions .button{gap:5px;font-size:11px;padding-inline:7px}}
+
+/* Datum-plane sketch editing stays inside the existing history card. */
+.planar-sketch { flex: none; border: 1px solid var(--line, #dfe4da); border-radius: 8px; overflow: hidden; }
+.planar-sketch svg { display: block; width: 100%; background: #f8faf5; cursor: crosshair; touch-action: none; }
+.sketch-grid { color: #cbd4c4; }
+.sketch-axis { stroke: #a6b29f; stroke-width: 1; }
+.planar-sketch svg text { font-size: 11px; fill: #687461; }
+.sketch-profile { fill: #e6eecf; fill-opacity: .65; stroke: #637739; stroke-width: 1.5; }
+.sketch-vertex { fill: #4f632f; }
+.sketch-controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; padding: 8px; font-size: 11px; color: #65705e; }
+.cad-editor .sketch-controls label { display: flex; flex-direction: row; align-items: center; gap: 4px; margin: 0; font-size: 11px; }
+.cad-editor .sketch-controls input { width: 64px; min-width: 0; padding: 3px; }
+.sketch-point-actions { display: flex; gap: 4px; padding: 0 8px 8px; flex-wrap: wrap; }
+.sketch-point-actions button { font-size: 11px; padding: 5px 7px; border: 1px solid #dfe4da; border-radius: 5px; background: white; }
+.sketch-points { max-height: 160px; overflow: auto; padding: 0 8px; }
+.sketch-points > div { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; }
+.cad-editor .sketch-points label { display: flex; align-items: center; gap: 3px; min-width: 0; margin: 0; }
+.cad-editor .sketch-points input { min-width: 0; width: 100%; padding: 5px; }
+
+.cad-face-actions{position:absolute;z-index:5;left:50%;bottom:66px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--paper,#fffefa);max-width:calc(100% - 28px);width:max-content;flex-wrap:wrap;justify-content:center}
+.cad-face-actions>span,.cad-face-note{font-size:11px;color:var(--muted)}
+.cad-face-actions .button{white-space:nowrap}
+
+.viewport-sketch{position:absolute;inset:0;z-index:3;outline:none;cursor:crosshair;touch-action:none;overflow:hidden}
+.sketch-viewport-svg{position:absolute;inset:0;overflow:visible}
+.viewport-sketch-profile{stroke:#3d6a9d;stroke-width:2;stroke-linejoin:round;pointer-events:none}
+.viewport-sketch-ghost{stroke:#3d6a9d;stroke-width:1.5;stroke-dasharray:5 4;fill:none;pointer-events:none}
+.viewport-sketch-point{fill:#3d6a9d;stroke:white;stroke-width:1;pointer-events:none}
+.viewport-sketch-origin{stroke:#9c645a;stroke-width:1;pointer-events:none}
+.sketch-size-line{stroke:#66805b;stroke-width:1;fill:none;pointer-events:none}
+.sketch-dimension-hit{stroke:transparent;stroke-width:16;fill:none;cursor:pointer;pointer-events:stroke}
+.sketch-dimension-hit:hover{stroke:#eedc3b88}
+.sketch-size-label{position:absolute;transform:translate(-50%,-50%);background:#f8faf3;border:1px solid #d8dfcf;border-radius:5px;padding:4px 7px;color:#3d5940;font-size:12px;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.sketch-size-label:hover,.sketch-size-label:focus-visible{border-color:#657c52;background:#fff}
+.sketch-size-label small{font-size:10px;color:var(--muted)}
+.sketch-size-input{position:absolute;width:212px;padding:10px;display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;background:var(--paper);border:1px solid #9bad8b;border-radius:8px;box-shadow:0 4px 14px #29352b18;cursor:default;z-index:2}
+.sketch-size-input label{flex:1;min-width:0;font-size:11px;text-transform:capitalize}.sketch-size-input input{width:100%;margin-top:4px;padding:6px}.sketch-size-input span{color:#a13b32;font-size:11px}
+.sketch-place-label{fill:#49643c;font-size:12px;pointer-events:none}
+.sketch-mode-hint{position:absolute;bottom:16px;left:16px;right:16px;display:flex;align-items:center;gap:12px;font-size:12px;pointer-events:none}
+.sketch-mode-hint strong{padding:6px 10px;background:#eef2e5;border:1px solid #ccd5c0;border-radius:5px;font-weight:600}.sketch-mode-hint small{margin-left:auto;color:var(--muted)}
+@media(max-width:700px){.sketch-mode-hint small{display:none}.sketch-mode-hint{font-size:11px}}
+.authoring-tool.is-active{background:#edf1e7;box-shadow:inset 0 0 0 1px #b4bcad;color:#334d37}
+.sketch-axis-label{fill:#865a51;font-size:10px;pointer-events:none}
+
+.cad-command-icon{flex:none;color:#43564d}.cad-command-icon .cad-icon-face{fill:#beced3}.cad-command-icon .cad-icon-accent{fill:#f0df74}.cad-command-icon .cad-icon-point{fill:#fffefa;stroke:#456c83}.cad-command-icon .cad-icon-operation{fill:none;stroke:#947715;stroke-width:2}
+
+/* Modeling stays inside the viewport; the sidebar remains History / Chat. */
+.cad-canvas-editor{position:absolute;z-index:7;top:76px;right:16px;width:280px;max-width:calc(100% - 88px);max-height:calc(100% - 144px);display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 22px #29352b14;overflow:hidden}
+.cad-canvas-editor.is-sketch{width:300px}
+.cad-canvas-editor .cad-editor{padding:14px;overscroll-behavior:contain}
+.cad-canvas-editor .cad-editor-heading{margin-bottom:4px}.cad-canvas-editor .cad-editor-heading h2{font-size:14px}
+.cad-canvas-editor .cad-editor label{margin:7px 0}.cad-canvas-editor .cad-editor input,.cad-canvas-editor .cad-editor select{padding:7px;font-size:12px;min-width:0}
+.cad-canvas-editor .cad-editor p{font-size:11px;margin:7px 0}.cad-canvas-editor .cad-editor-note{display:none}
+.cad-canvas-editor .cad-editor-actions{position:sticky;bottom:-14px;background:var(--paper);padding:10px 0 2px;margin-top:6px}
+.cad-sketch-actions{display:flex;align-items:center;gap:6px;padding:7px;flex:none}.cad-sketch-actions .button{padding:6px 9px;min-height:32px;font-size:12px}.cad-sketch-actions .icon-button{margin-left:auto}
+.sketch-reference-edge{stroke:#c8a92b;stroke-width:3;fill:none;pointer-events:none}.sketch-gap-line{stroke-dasharray:4 2}.sketch-gap-label{border-style:dashed}.sketch-size-input small{flex-basis:100%;color:var(--muted);font-size:10px}.sketch-size-input .icon-button{padding:0;min-width:20px;width:20px;height:30px}
+@media(max-width:700px){.cad-canvas-editor{top:auto;bottom:54px;right:8px;max-height:45%;max-width:calc(100% - 72px);width:260px}.cad-canvas-editor.is-sketch{width:280px}.cad-sketch-actions .button{padding:5px 6px}.cad-canvas-editor .cad-editor{padding:10px}}
+@media(pointer:coarse){.cad-sketch-actions .button,.cad-sketch-actions .icon-button{min-height:44px}.sketch-size-label{min-height:32px}}
+.cad-editor-preview{padding:8px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;flex:none}.cad-editor-preview button{font-size:10px}

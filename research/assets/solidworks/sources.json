@@ -1,0 +1,116 @@
+{
+  "accessed": "2026-09-27",
+  "attribution": "SOLIDWORKS / Dassault Syst\u00e8mes official publications",
+  "images": [
+    {
+      "file": "propertymanager-flange.webp",
+      "title": "A command lives beside the model",
+      "edition": "2026 Design article",
+      "tags": "modelling",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/whats-new-in-solidworks-2026-design/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/sheetmetalbaseflangeoct1425.png.webp",
+      "observation": "Actual screen: Break Corner, despite the asset\u2019s base-flange filename. Selected edges are listed in the left editor.",
+      "recommendation": "Give each LemonCAD tool named selections, exact values, preview, Apply and Cancel."
+    },
+    {
+      "file": "commandmanager-comparison.webp",
+      "title": "Small tool set, clear starting point",
+      "edition": "2025 education article",
+      "tags": "tools",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/solidworks-edu-2025-simplified-interface-for-teachers-and-students/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/simplified-interface-commandmanager-615x150-1.jpg.webp",
+      "observation": "Simplified and default CommandManager layouts shown together.",
+      "recommendation": "Start with common tools. Keep advanced commands accessible through search."
+    },
+    {
+      "file": "sketch-workspace.webp",
+      "title": "A workspace with distinct jobs",
+      "edition": "2025 education article \u00b7 image shows SP1.0",
+      "tags": "tools modelling",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/solidworks-edu-2025-simplified-interface-for-teachers-and-students/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/solidworks-simplified-interface-for-edu-615x348-1.jpg.webp",
+      "observation": "Top: creation tools. Left: model structure. Canvas: view controls.",
+      "recommendation": "Keep geometry commands separate from view controls; preserve room for the model."
+    },
+    {
+      "file": "feature-tree-comparison.webp",
+      "title": "A readable model tree",
+      "edition": "2025 education article",
+      "tags": "modelling",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/solidworks-edu-2025-simplified-interface-for-teachers-and-students/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/simplified-interface-featuremanager-615x367-1.jpg.webp",
+      "observation": "Simplified tree on the left; default tree on the right.",
+      "recommendation": "Show essentials first, with search and distinct feature states. Keep versions separate."
+    },
+    {
+      "file": "sketch-extrude-tools.webp",
+      "title": "Commands follow the current task",
+      "edition": "2025 education article",
+      "tags": "tools modelling",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/solidworks-edu-2025-simplified-interface-for-teachers-and-students/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/simplified-interface-sketch-tools-and-extrude-615x79-1.jpg.webp",
+      "observation": "The sketch command strip includes dimensions, relations and extrusion.",
+      "recommendation": "A Sketch context needs drawing and constraint tools, plus an obvious Finish action."
+    },
+    {
+      "file": "simplified-workspace.webp",
+      "title": "Simplicity is a workspace choice",
+      "edition": "2025 education article",
+      "tags": "tools",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/solidworks-edu-2025-simplified-interface-for-teachers-and-students/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/simplified-interface-workspace-615x408-1.jpg.webp",
+      "observation": "The View menu exposes the simplified workspace option.",
+      "recommendation": "Keep a basic default and let experienced users reveal more tools without losing their model."
+    },
+    {
+      "file": "assembly-fasteners.webp",
+      "title": "Parts belong to an assembly context",
+      "edition": "2026 Design article",
+      "tags": "assemblies",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/whats-new-in-solidworks-2026-design/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/automaticfasteneroct1425.png.webp",
+      "observation": "A source washer and a larger assembly appear side by side.",
+      "recommendation": "Make the selected component instance, its source part and intended mate explicit."
+    },
+    {
+      "file": "assembly-loading.webp",
+      "title": "Reduce what the user must inspect",
+      "edition": "2026 Design article",
+      "tags": "assemblies",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/whats-new-in-solidworks-2026-design/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2025/12/selectiveloadingoct1425.png.webp",
+      "observation": "Platform component selection appears beside the loaded desktop assembly.",
+      "recommendation": "Plan isolate and component filtering before trying to display every part and panel."
+    },
+    {
+      "file": "ai-error-analysis.png",
+      "title": "Conversation can explain a failed feature",
+      "edition": "25 February 2026 \u00b7 FD01 \u00b7 beta in source",
+      "tags": "assistant modelling",
+      "source_page": "https://blogs.solidworks.com/solidworksblog/2026/02/whats-new-in-solidworks-2026x-fd01-design-and-modeling.html",
+      "source_image": "https://blog-assets.solidworks.com/uploads/sites/2/2026/02/aiwhatswrongfeb926.png",
+      "observation": "A failure list, flagged feature tree and assistant share the screen.",
+      "recommendation": "Link the explanation to the first failing feature and offer a specific repair."
+    },
+    {
+      "file": "ai-assembly-structure.png",
+      "title": "A prompt leads to something reviewable",
+      "edition": "25 February 2026 \u00b7 FD01 \u00b7 beta in source",
+      "tags": "assistant assemblies",
+      "source_page": "https://blogs.solidworks.com/solidworksblog/2026/02/whats-new-in-solidworks-2026x-fd01-design-and-modeling.html",
+      "source_image": "https://blog-assets.solidworks.com/uploads/sites/2/2026/02/aistructuregeneratorfeb92620_1_.png",
+      "observation": "The assembly structure is previewed before file generation.",
+      "recommendation": "Review component hierarchy and scope before applying a conversational assembly change."
+    },
+    {
+      "file": "xdesign-browser.webp",
+      "title": "The browser product has its own layout",
+      "edition": "xDesign 2026x FD01 article",
+      "tags": "browser assemblies",
+      "source_page": "https://blogs.solidworks.com/products/solidworks/whats-new-in-solidworks-xdesign-2026x-fd01/",
+      "source_image": "https://blog-assets.solidworks.com/uploads/2026/02/hypershockfdo1xdesignjan2926.png.webp",
+      "observation": "xDesign places its Action Bar at the bottom of the browser workspace.",
+      "recommendation": "Borrow browser-friendly access; choose LemonCAD\u2019s tool placement based on our workflows."
+    }
+  ]
+}

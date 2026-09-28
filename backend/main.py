@@ -17,6 +17,7 @@ from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from backend.db import DB, User, GoogleIdentity, Session, Folder, FolderMember, FolderInvite, File, Project, Revision, Share, Job, Artifact, Entitlement, Review, now, uid
 from backend import storage
+from backend.cad_document import CadDocument
 
 app = FastAPI(title='LemonCAD')
 passwords = PasswordHasher()
@@ -187,7 +188,7 @@ def read_file(request, db, file_id):
                     return file
         else:
             for revision in db.scalars(select(Revision)):
-                if revision.state.get('drawing_job_id') == job.id and can_revision(request, db, revision):
+                if job.id in (revision.state.get('drawing_job_id'), revision.state.get('cad_job_id')) and can_revision(request, db, revision):
                     return file
     fail(404, 'File not found.')
 
@@ -324,6 +325,57 @@ def workspace(request: Request, db=Depends(db_session)):
     return {'folders': [{'id': f.id, 'name': f.name, 'parent_id': f.parent_id} for f in folders], 'projects': [project_summary(p) for p in projects], 'shared': shared}
 
 
+class CadPreview(Input):
+    document: CadDocument
+
+
+@app.post('/api/cad/preview')
+def cad_preview(data: CadPreview, request: Request, db=Depends(db_session)):
+    user_of(request, db, True)
+    return new_job(db, request, 'cad', {'document': data.document.model_dump()})
+
+
+class FacePlane(Input):
+    file_id: str
+    face_id: int = Field(gt=0)
+
+
+@app.post('/api/cad/face-plane')
+def cad_face_plane(data: FacePlane, request: Request, db=Depends(db_session)):
+    user_of(request, db, True)
+    file = read_file(request, db, data.file_id)
+    if file.format not in ('step', 'stp'):
+        fail(422, 'Face sketches require STEP geometry.')
+    return new_job(db, request, 'face_plane', data.model_dump())
+
+
+class RenameProject(Input):
+    name: str = Field(min_length=1, max_length=120)
+
+
+@app.patch('/api/projects/{project_id}')
+def rename_project(project_id: str, data: RenameProject, request: Request, db=Depends(db_session)):
+    project = owned(db, Project, project_id, user_of(request, db, True))
+    if not data.name.strip():
+        fail(422, 'Enter a project name.')
+    project.name = data.name.strip()
+    db.commit()
+    return project_summary(project)
+
+
+@app.get('/api/projects/{project_id}/revisions')
+def project_revisions(project_id: str, request: Request, db=Depends(db_session)):
+    project = db.get(Project, project_id)
+    if not project:
+        fail(404, 'Project not found.')
+    revisions = list(db.scalars(select(Revision).where(Revision.project_id == project_id).order_by(Revision.created_at.desc())))
+    visible = [r for r in revisions if can_revision(request, db, r)]
+    if not visible:
+        fail(404, 'Project not found.')
+    return [{'id': r.id, 'created_at': r.created_at, 'current': r.id == project.current_revision_id,
+             'published': r.id == project.published_revision_id} for r in visible]
+
+
 class Save(Input):
     name: str = Field(min_length=1, max_length=120)
     file_id: str
@@ -354,6 +406,13 @@ def save(data: Save, request: Request, db=Depends(db_session)):
         project = Project(owner_id=user.id, name=data.name, folder_id=data.folder_id)
         db.add(project)
         db.flush()
+    cad_id = data.state.get('cad_job_id')
+    cad_document = data.state.get('cad_document')
+    generated = db.scalar(select(Artifact).where(Artifact.file_id == file.id, Artifact.kind == 'cad_step'))
+    if cad_id or cad_document or generated:
+        job = own_job(request, db, cad_id or '')
+        if job.type != 'cad' or job.status != 'completed' or job.result.get('cad_step') != file.id or job.input.get('document') != cad_document:
+            fail(422, 'CAD document and generated geometry must come from the same completed preview.')
     drawing_id = data.state.get('drawing_job_id')
     if drawing_id:
         job = own_job(request, db, drawing_id)
@@ -368,7 +427,7 @@ def save(data: Save, request: Request, db=Depends(db_session)):
     project.name = data.name.strip()
     file.owner_id, file.expires_at = user.id, None
     for job in db.scalars(select(Job)):
-        if job.input.get('file_id') == file.id and (job.type == 'import' or job.id == drawing_id):
+        if (job.input.get('file_id') == file.id and (job.type == 'import' or job.id == drawing_id)) or job.id == cad_id:
             job.owner_id = user.id
             for artifact in db.scalars(select(Artifact).where(Artifact.job_id == job.id)):
                 af = db.get(File, artifact.file_id)
@@ -384,7 +443,7 @@ def revision_read(revision_id: str, request: Request, db=Depends(db_session)):
         fail(404, 'Project not found or sharing was revoked.')
     project = db.get(Project, rev.project_id)
     file = db.get(File, rev.source_file_id)
-    imported = next((j for j in db.scalars(select(Job).where(Job.type == 'import', Job.status == 'completed')) if j.input.get('file_id') == file.id), None)
+    imported = db.get(Job, rev.state['cad_job_id']) if rev.state.get('cad_job_id') else next((j for j in db.scalars(select(Job).where(Job.type == 'import', Job.status == 'completed')) if j.input.get('file_id') == file.id), None)
     user = user_of(request, db)
     drawing = db.get(Job, rev.state.get('drawing_job_id', ''))
     return {'project': project_summary(project, rev.id), 'file': {'id': file.id, 'name': file.name, 'format': file.format}, 'state': rev.state, 'mesh': imported.result if imported else None, 'drawing': drawing.result if drawing else None, 'editable': bool(user and user.id == project.owner_id)}
