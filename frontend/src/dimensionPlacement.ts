@@ -2,7 +2,7 @@ export type Point2 = [number, number];
 export function visiblePlanarDimension(a:Point2,b:Point2,scale=1){return Math.hypot(b[0]-a[0],b[1]-a[1])>=6*scale;}
 export function dimensionClick(hit:boolean, selected:number, pending:boolean, dragged:boolean){
   if(dragged)return 'none';
-  if(pending&&(!hit||selected===2))return 'place';
+  if(pending&&!hit)return 'place';
   return hit?'select':'none';
 }
 export function cursorLabelPosition(pointer:Point2,width:number,height:number,labelWidth:number,scale=1):Point2{

@@ -30,21 +30,22 @@ def execute(kind, payload, source, out):
                 raise ValueError('Invalid STL: expected ASCII facets or a complete binary triangle list.')
             return {'mesh_based': True}
         from cad.loader import load_step
-        from cad.icl import faced_mesh, indexed_edges
+        from cad.icl import faced_mesh, indexed_edges, _cylinder_faces, _face_map, _edge_map
         shape = load_step(str(source))
         if shape.IsNull():
             raise ValueError('STEP contains no supported geometry.')
         result = faced_mesh(shape)
         result['edges'] = indexed_edges(shape)
         from cad.smart_measure import feature, smart_measure
+        cylinders = _cylinder_faces(shape)
         result['measure_features'] = {}
-        for kind, items in [('face', result['faces']), ('edge', result['edges'])]:
+        for kind, items, mapping in [('face', result['faces'], _face_map(shape)), ('edge', result['edges'], _edge_map(shape))]:
             for item in items:
                 ref = {'kind': kind, 'id': item['id']}
-                descriptor = feature(shape, ref)
+                descriptor = feature(shape, ref, mapping)
                 if descriptor['type'] not in ('circle', 'line'):
                     continue
-                descriptor['single'] = smart_measure(shape, [ref])
+                descriptor['single'] = smart_measure(shape, [ref], known_features=[descriptor], cylinder_faces=cylinders, face_map=mapping if kind == 'face' else None)
                 result['measure_features'][str(item['id'] if kind == 'face' else -item['id'])] = descriptor
         if not result['indices'] or len(result['indices']) > 6000000:
             raise ValueError('No mesh generated, or model exceeds the two million triangle limit.')

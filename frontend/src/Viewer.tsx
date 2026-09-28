@@ -13,7 +13,7 @@ import type {MeasureFeature} from './quickMeasure';
 import {fileURL, dimensionValue, type Model, type Dimension} from './api';
 
 export type ViewerHandle = {pickSketchEdge:(x:number,y:number,frame:SketchFrame)=>PlaneEdge|null;sketchView: () => SketchView|null; panSketch:(dx:number,dy:number)=>void; zoomSketch:(factor:number)=>void; focus: () => void; fit: (view?: string) => void; camera: () => any; normalTo: (frame:SketchFrame) => void; restoreCamera: (camera:any) => boolean; export: (format: 'png'|'pdf') => Promise<void>};
-type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; selecting?:boolean; onSelectFace?:(selection:{id:number;point:number[]}|null)=>void; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
+type Props = {model: Model; dimensions: Dimension[]; preview: Dimension|null; pending:boolean; onPlace:(placement:Placement)=>void; unit: string; stlUnit: string; selected: number[]; measuring: boolean; edgePicking:boolean; selecting?:boolean; editable:boolean; onSelectFace?:(selection:{id:number;point:number[]}|null)=>void; wire: boolean; labels: boolean; onPick: (id: number, point: number[]) => void; onReady: (faces: any[],features:Record<string,MeasureFeature>) => void; onLabelMove: (id:string,placement:Placement) => void; onLabelDelete:(id:string)=>void; onViewChange:(view:string|null)=>void; onError: (message: string) => void};
 function download(blob: Blob, name: string) {const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);}
 
 export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref) {
@@ -56,7 +56,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       download(new Blob([new Uint8Array(await pdf.save())],{type:'application/pdf'}),p.model.name+'.pdf');
     }
   }),[]);
-  useEffect(() => {runtime.current?.render();},[props.dimensions,props.preview,props.selected,props.unit,props.wire,props.labels,props.measuring,props.selecting]);
+  useEffect(() => {runtime.current?.render();},[props.dimensions,props.preview,props.selected,props.unit,props.wire,props.labels,props.measuring,props.edgePicking,props.selecting]);
   useEffect(()=>{if(props.measuring)host.current?.focus();},[props.measuring]);
   useEffect(() => {
     const container = host.current!;
@@ -70,11 +70,11 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     container.append(renderer.domElement,overlay);
     scene.add(new THREE.HemisphereLight(0xffffff,0x77816d,2.5)); scene.add(new THREE.AmbientLight(0xffffff,0.7));
     const light = new THREE.DirectionalLight(0xffffff,3); light.position.set(100,50,200); scene.add(light);
-    let mesh: THREE.Mesh | undefined, edge: THREE.LineSegments | undefined, ids: number[] = [], geometry: THREE.BufferGeometry | undefined;
+    let mesh: THREE.Mesh | undefined, edge: THREE.LineSegments | undefined, cadLines: THREE.LineSegments | undefined, ids: number[] = [], geometry: THREE.BufferGeometry | undefined;
     let faceMetadata:any[]=[],rims:Rim[]=[],cadEdges:CadEdge[]=[];
     let viewHeight=1;let pointer:Point2|null=null;
     function project(p:number[]){const v=new THREE.Vector3(...p).project(camera);return [(v.x+1)*overlay.width/2,(1-v.y)*viewHeight*renderer.getPixelRatio()/2];}
-    let extent=100, center=new THREE.Vector3(), stopped=false, frame=0;
+    let extent=100, center=new THREE.Vector3(), stopped=false;
     const abort = new AbortController();
     let viewQuaternion:THREE.Quaternion|null=null;
     function fit(view='iso') {
@@ -98,7 +98,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     }
     const observer = new ResizeObserver(resize); observer.observe(container);
     const ray = new THREE.Raycaster(); let down=[0,0];
-    let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null;
+    let labelBoxes:{id:string;x:number;y:number;width:number}[]=[],dragLabel:string|null=null,selectedLabel:string|null=null,draggedLabel=false;
     function placement(position:number[]):Placement{return {position,matrix:new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).toArray(),viewport:[container.clientWidth,container.clientHeight]};}
     function previewPoint(position:Point2):Point2{
       const preview=current.current.preview;if(!preview)return position;
@@ -110,8 +110,8 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     }
     function pointerDown(e: PointerEvent) {down=[e.clientX,e.clientY];controls.handleResize();
       const rect=container.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
-      dragLabel=(!current.current.preview&&!current.current.pending?labelBoxes:[]).find(b=>x>=b.x&&x<=b.x+b.width&&y>=b.y-20&&y<=b.y+8)?.id||null;
-      if(dragLabel){e.stopImmediatePropagation();controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);}
+      dragLabel=(e.button===0&&!current.current.preview&&!current.current.pending?labelBoxes:[]).find(b=>x>=b.x&&x<=b.x+b.width&&y>=b.y-20&&y<=b.y+8)?.id||null;
+      if(dragLabel){draggedLabel=false;container.focus();e.stopImmediatePropagation();controls.enabled=false;renderer.domElement.setPointerCapture(e.pointerId);}
     }
     function hitAt(e:PointerEvent){
       if(!mesh)return;
@@ -120,10 +120,11 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       if(current.current.selecting){
         return pickSketchFace(ray,mesh,ids);
       }
-      return pickCadEntity(ray,mesh,ids,rims,cadEdges,faceMetadata,camera,rect.width,viewHeight,x,y);
+      return pickCadEntity(ray,mesh,ids,rims,cadEdges,camera,rect.width,viewHeight,x,y,e.altKey||current.current.edgePicking);
     }
     function pointerUp(e: PointerEvent) {
-      if(dragLabel){dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
+      if(dragLabel){selectedLabel=dragLabel;render();dragLabel=null;controls.enabled=true;renderer.domElement.releasePointerCapture(e.pointerId);return;}
+      if(selectedLabel){selectedLabel=null;render();}
       controls.update();
       if(e.button!==0||!mesh)return;
       if(current.current.selecting){if(Math.hypot(e.clientX-down[0],e.clientY-down[1])<=5)current.current.onSelectFace?.(hitAt(e)||null);return;}
@@ -134,6 +135,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       else if(action==='select'&&hit)current.current.onPick(hit.id,hit.point);
     }
     function keyDown(e:KeyboardEvent){
+      if(selectedLabel&&current.current.editable&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();current.current.onLabelDelete(selectedLabel);selectedLabel=null;render();return;}
       if(!current.current.measuring&&!current.current.selecting)return;
       if(!faceMetadata.length)return;
       if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
@@ -144,26 +146,32 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
     }
     container.addEventListener('keydown',keyDown);
     renderer.domElement.addEventListener('pointerdown',pointerDown,true);renderer.domElement.addEventListener('pointerup',pointerUp);
+    renderer.domElement.addEventListener('pointercancel',()=>{dragLabel=null;controls.enabled=true;});
     let previousSelection='', hovered=0;
     function pointerMove(e:PointerEvent){
       const rect=container.getBoundingClientRect();pointer=[(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height];
-      if(dragLabel){const rect=container.getBoundingClientRect();current.current.onLabelMove(dragLabel,placement([(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height]));return;}
+      if(dragLabel){if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)draggedLabel=true;if(draggedLabel&&current.current.editable){const rect=container.getBoundingClientRect();current.current.onLabelMove(dragLabel,placement([(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height]));}return;}
       controls.update();
       if(!mesh||(!current.current.measuring&&!current.current.selecting)){hovered=0;return;}
-      const hit=hitAt(e);hovered=hit?.id||0;container.style.cursor=hit||current.current.preview||current.current.pending?'crosshair':'grab';render();
+      const hit=hitAt(e),previousHovered=hovered;hovered=hit?.id||0;container.style.cursor=hit||current.current.preview||current.current.pending?'crosshair':'grab';
+      if(hovered!==previousHovered||current.current.preview||current.current.pending)render();
     }
     renderer.domElement.addEventListener('pointermove',pointerMove);renderer.domElement.addEventListener('pointerleave',()=>{hovered=0;render();});
     function render() {
+      if(selectedLabel&&(!current.current.labels||!current.current.dimensions.some(d=>d.id===selectedLabel)))selectedLabel=null;
       if(!current.current.measuring&&!current.current.selecting)hovered=0;
       if (mesh) {
         const selected=current.current.selected.join(',')+':'+hovered;
         if (selected!==previousSelection && geometry) {
           const colors=geometry.getAttribute('color');
-          for(let t=0;t<ids.length;t++) {const color=new THREE.Color(current.current.selected.includes(ids[t])?'#F3DF38':hovered===ids[t]?'#D9DB89':'#687F91');for(let k=0;k<3;k++) colors.setXYZ(t*3+k,color.r,color.g,color.b);}
+          const selectedIds=new Set(current.current.selected);
+          const base=new THREE.Color('#687F91'),active=new THREE.Color('#F3DF38'),hover=new THREE.Color('#D9DB89');
+          for(let t=0;t<ids.length;t++) {const color=selectedIds.has(ids[t])?active:hovered===ids[t]?hover:base;for(let k=0;k<3;k++) colors.setXYZ(t*3+k,color.r,color.g,color.b);}
           colors.needsUpdate=true;previousSelection=selected;
         }
-        (mesh.material as THREE.MeshStandardMaterial).wireframe=current.current.wire;
-        if(edge) edge.visible=!current.current.wire;
+        mesh.visible=!current.current.wire;
+        if(edge)edge.visible=!current.current.wire||!cadLines;
+        if(cadLines)cadLines.visible=current.current.wire;
       }
       renderer.render(scene,camera);
       const c=overlay.getContext('2d')!;c.clearRect(0,0,overlay.width,overlay.height);
@@ -189,7 +197,7 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
         const labelCenter:Point2=pending&&pointer?cursorLabelPosition(pointer,overlay.width,overlay.height,width,ratio):!pending&&d.annotation?visibleLabelCenter(project(d.annotation.label) as Point2,overlay.width,overlay.height,width,ratio):[Math.max(width/2+8*ratio,Math.min(overlay.width-width/2-8*ratio,labelPlacement?labelPlacement[0]*overlay.width:(a[0]+b[0])/2)),Math.max(24*ratio,Math.min(overlay.height-12*ratio,labelPlacement?labelPlacement[1]*overlay.height:Math.min(a[1],b[1])-45*ratio-i*30*ratio))];
         const x=labelCenter[0]-width/2,y=labelCenter[1];
         if(!pending)labelBoxes.push({id:d.id,x:x/ratio,y:y/ratio,width:width/ratio});
-        c.lineWidth=1.2*ratio;c.strokeStyle=pending?'#A68E05':'#52633D';
+        c.lineWidth=(d.id===selectedLabel?2:1.2)*ratio;c.strokeStyle=pending||d.id===selectedLabel?'#A68E05':'#52633D';
         function line(p:number[],q:number[]){c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);}
         function arrow(p:number[],q:number[]){const angle=Math.atan2(q[1]-p[1],q[0]-p[0]);for(const sign of [-1,1])line(p,[p[0]+8*ratio*Math.cos(angle+sign*.35),p[1]+8*ratio*Math.sin(angle+sign*.35)]);}
         c.beginPath();
@@ -204,11 +212,12 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
         }
         c.stroke();
         for(const p of [a,b]){c.beginPath();line([p[0]-3*ratio,p[1]],[p[0]+3*ratio,p[1]]);line([p[0],p[1]-3*ratio],[p[0],p[1]+3*ratio]);c.stroke();}
-        c.fillStyle=pending?'#FFF9CB':'#F3F5EE';c.fillRect(x,y-17*ratio,width,24*ratio);c.fillStyle='#29352B';c.fillText(label,x+8*ratio,y);
+        c.fillStyle=pending||d.id===selectedLabel?'#FFF9CB':'#F3F5EE';c.fillRect(x,y-17*ratio,width,24*ratio);c.fillStyle='#29352B';c.fillText(label,x+8*ratio,y);
 
       });
     }
     controls.addEventListener('change',()=>{if(viewQuaternion&&1-Math.abs(camera.quaternion.dot(viewQuaternion))>1e-8){viewQuaternion=null;current.current.onViewChange(null);}render();});
+    controls.addEventListener('end',()=>controls.update());
     function pickSketchEdge(x:number,y:number,frame:SketchFrame):PlaneEdge|null{
       if(!mesh)return null;
       const eligible=cadEdges.filter(e=>planeEdge(e,frame));
@@ -229,20 +238,25 @@ export const Viewer = forwardRef<ViewerHandle, Props>(function Viewer(props, ref
       }
       if(stopped) {geometry.dispose();return;}
       const positions=geometry.getAttribute('position');
-      if(!positions.count || positions.count > 6000000 || !Array.from(positions.array).every(Number.isFinite)) throw new Error('Mesh is empty, too large or contains invalid coordinates.');
+      if(!positions.count || positions.count > 6000000) throw new Error('Mesh is empty, too large or contains invalid coordinates.');
+      for(const coordinate of positions.array)if(!Number.isFinite(coordinate))throw new Error('Mesh is empty, too large or contains invalid coordinates.');
       geometry.computeBoundingBox();const box=geometry.boundingBox!;box.getCenter(center);extent=box.getSize(new THREE.Vector3()).length();
       if(!Number.isFinite(extent)||extent<=0) throw new Error('Model has no measurable extent.');
-      const colors=new Float32Array(positions.count*3), base=new THREE.Color('#687F91');for(let i=0;i<positions.count;i++)colors.set([base.r,base.g,base.b],i*3);
+      const colors=new Float32Array(positions.count*3), base=new THREE.Color('#687F91');for(let i=0;i<positions.count;i++){const offset=i*3;colors[offset]=base.r;colors[offset+1]=base.g;colors[offset+2]=base.b;}
       geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));geometry.computeVertexNormals();
       mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,metalness:.15,roughness:.65,side:THREE.DoubleSide}));scene.add(mesh);
       edge=new THREE.LineSegments(new THREE.EdgesGeometry(geometry,30),new THREE.LineBasicMaterial({color:0x000000}));scene.add(edge);
+      if(cadEdges.length){
+        const segments:number[]=[];
+        for(const e of cadEdges)for(let i=1;i<e.points.length;i++)segments.push(...e.points[i-1],...e.points[i]);
+        if(segments.length){const lines=new THREE.BufferGeometry();lines.setAttribute('position',new THREE.Float32BufferAttribute(segments,3));cadLines=new THREE.LineSegments(lines,new THREE.LineBasicMaterial({color:0x29352B,depthTest:false}));cadLines.renderOrder=1;scene.add(cadLines);}
+      }
       fit();const saved=current.current.model.state?.camera;
       if(saved?.position?.length===3 && saved?.target?.length===3 && [...saved.position,...saved.target,saved.zoom].every(Number.isFinite)){camera.position.fromArray(saved.position);if(saved.up?.length===3&&saved.up.every(Number.isFinite))camera.up.fromArray(saved.up);controls.target.fromArray(saved.target);camera.zoom=Math.max(.01,Math.min(100,saved.zoom));camera.updateProjectionMatrix();controls.update();viewQuaternion=null;current.current.onViewChange(null);}
       runtime.current.ready=true;current.current.onReady(faces,measureFeatures); render();
     }
     load().catch(e=>{if(!stopped) current.current.onError(e.message);});
-    function animate(){if(stopped)return;controls.update();render();frame=requestAnimationFrame(animate);}animate();
-    return()=>{stopped=true;abort.abort();cancelAnimationFrame(frame);observer.disconnect();container.removeEventListener('keydown',keyDown);controls.dispose();geometry?.dispose();if(mesh)(mesh.material as THREE.Material).dispose();if(edge){edge.geometry.dispose();(edge.material as THREE.Material).dispose();}renderer.dispose();container.replaceChildren();runtime.current=null;};
+    return()=>{stopped=true;abort.abort();observer.disconnect();container.removeEventListener('keydown',keyDown);controls.dispose();geometry?.dispose();if(mesh)(mesh.material as THREE.Material).dispose();if(edge){edge.geometry.dispose();(edge.material as THREE.Material).dispose();}if(cadLines){cadLines.geometry.dispose();(cadLines.material as THREE.Material).dispose();}renderer.dispose();container.replaceChildren();runtime.current=null;};
   },[props.model.file_id,props.stlUnit]);
-  return <div className="canvas-host" ref={host} tabIndex={0} role="application" aria-label={`Interactive model of ${props.model.name}. Drag to orbit, scroll to zoom. ${props.selecting?'Click a planar face to sketch.':'Click a hole then an edge for centre distance.'} Move the mouse and click empty space to place the dimension. Drag to rotate. Keyboard: left and right arrows highlight faces; Enter selects; Escape clears selection.`}/>;
+  return <div className="canvas-host" ref={host} tabIndex={0} role="application" aria-label={`Interactive model of ${props.model.name}. Drag to orbit, scroll to zoom. ${props.selecting?'Click a planar face to sketch.':'Click inside a hole or on a face to measure; use Pick edge or hold Option or Alt for an edge.'} Move the mouse and click empty space to place the dimension. Click a dimension and press Delete to remove it. Keyboard: left and right arrows highlight faces; Enter selects; Escape clears selection.`}/>;
 });

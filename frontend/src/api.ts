@@ -1,7 +1,7 @@
 export const shareToken = new URLSearchParams(location.search).get('share');
 export function fileURL(id: string) {return `/api/files/${id}${shareToken ? `?share=${encodeURIComponent(shareToken)}` : ''}`;}
-export async function api<T = any>(path: string, method = 'GET', data?: unknown): Promise<T> {
-  const response = await fetch('/api' + path, {method, headers: data instanceof FormData ? undefined : data === undefined ? undefined : {'Content-Type': 'application/json'}, body: data instanceof FormData ? data : data === undefined ? undefined : JSON.stringify(data)});
+export async function api<T = any>(path: string, method = 'GET', data?: unknown, signal?: AbortSignal): Promise<T> {
+  const response = await fetch('/api' + path, {method, signal, headers: data instanceof FormData ? undefined : data === undefined ? undefined : {'Content-Type': 'application/json'}, body: data instanceof FormData ? data : data === undefined ? undefined : JSON.stringify(data)});
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try { const body = await response.json(); message = typeof body.detail === 'string' ? body.detail : body.detail?.map((v: any) => v.msg).join(';') || message; } catch {}

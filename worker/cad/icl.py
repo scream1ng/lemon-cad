@@ -582,12 +582,12 @@ def _cylinder_center(face):
     return center, axis, cyl.Radius()
 
 
-def measure_single(shape, kind: str, ent_id: int) -> dict:
+def measure_single(shape, kind: str, ent_id: int, cylinder_faces=None, face_map=None) -> dict:
     """Smart single-entity dimension: cylinder face -> Ø (full hole) or R (arc/bend)."""
     if kind != "face":
         raise ValueError("single-entity dimension needs a cylindrical face")
-    f = _face(_sub_shape(shape, "face", ent_id))
-    info = _cylinder_faces(shape).get(ent_id)
+    f = _face(face_map.FindKey(ent_id) if face_map is not None else _sub_shape(shape, "face", ent_id))
+    info = (cylinder_faces if cylinder_faces is not None else _cylinder_faces(shape)).get(ent_id)
     if not info:
         raise ValueError("pick a hole or cylindrical face for Ø / R")
     cyl = info["cylinder"]
@@ -720,6 +720,30 @@ def measure(
                 "mode": "surface-to-surface", "method": "center-to-plane",
                 "suggested_gauge": "Vernier",
             }
+
+    if {kind1, kind2} == {"face", "edge"}:
+        face = _face(s1 if kind1 == "face" else s2)
+        surface = BRepAdaptor_Surface(face)
+        if surface.GetType() == GeomAbs_Plane:
+            edge = _static(TopoDS, "Edge")(s1 if kind1 == "edge" else s2)
+            geometry = _edge_geometry(edge)
+            if geometry and geometry[0] == "line":
+                curve = BRepAdaptor_Curve(edge)
+                a, b = curve.Value(curve.FirstParameter()), curve.Value(curve.LastParameter())
+                midpoint = [(a.X()+b.X())/2, (a.Y()+b.Y())/2, (a.Z()+b.Z())/2]
+                pln = surface.Plane()
+                direction = pln.Axis().Direction()
+                normal = (direction.X(), direction.Y(), direction.Z())
+                axis = geometry[1].Direction()
+                if abs(_dot(normal, (axis.X(), axis.Y(), axis.Z()))) > 1e-6:
+                    raise ValueError("Select a straight edge parallel to the surface for a perpendicular gap.")
+                origin = pln.Location()
+                signed = _dot(tuple(midpoint[i]-v for i, v in enumerate((origin.X(), origin.Y(), origin.Z()))), normal)
+                foot = [midpoint[i]-signed*normal[i] for i in range(3)]
+                p1, p2 = (foot, midpoint) if kind1 == "face" else (midpoint, foot)
+                return {"label": "Plane to edge", "value_mm": round(abs(signed), 3),
+                        "p1": _rnd3(p1), "p2": _rnd3(p2), "mode": "surface-to-edge",
+                        "method": "plane-to-edge", "suggested_gauge": "Vernier"}
 
     dss = BRepExtrema_DistShapeShape(s1, s2)
     if not dss.IsDone():
